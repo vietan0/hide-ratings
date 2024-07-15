@@ -1,0 +1,25 @@
+{
+  "type": "module",
+  "scripts": {
+    "build": "web-ext build",
+    "lint": "eslint .",
+    "sign": "node sign.js",
+    "start:firefox": "web-ext run --devtools --start-url www.chess.com --start-url chess.wintrcat.uk"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "^2.22.0",
+    "eslint": "^9.6.0",
+    "eslint-plugin-format": "^0.1.2",
+    "web-ext": "^8.2.0"
+  },
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "eslint": "9"
+      }
+    }
+  }
+}
