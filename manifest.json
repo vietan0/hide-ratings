@@ -1,0 +1,36 @@
+{
+  "manifest_version": 2,
+  "name": "Hide Chess.com Ratings",
+  "version": "1.2",
+  "homepage_url": "https://github.com/vietan0/hide-ratings",
+  "description": "Hide Chess.com and Wintrcat's Game Review ratings to help you focus on playing at your best - without distraction.",
+  "icons": {
+    "48": "icons/chesslogo.png"
+  },
+  "permissions": [
+    "webRequest",
+    "webRequestBlocking",
+    "https://chess.wintrcat.uk/*"
+  ],
+  "background": {
+    "scripts": [
+      "hide-wintrcat-ratings-background.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.chess.com/*"],
+      "css": ["/hide-chess-com-ratings.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://chess.wintrcat.uk/*"],
+      "js": ["/hide-wintrcat-ratings.js"]
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "{b8ac3f83-6217-4483-a9a5-1c4e2908be4f}"
+    }
+  }
+}

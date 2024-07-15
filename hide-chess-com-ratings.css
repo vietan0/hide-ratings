@@ -1,0 +1,17 @@
+.user-tagline-popover-rating /* completed game component */,
+.stat-section-user-rating > span /* stats in /member */,
+.highcharts-tooltip /* tooltip in chart in /member */,
+.stat-text-data-highest /* stats in /member */,
+.rating-score-component /* below username in /game/live */,
+.user-tagline-rating /* next to username in /game/live */,
+.user-rating-component /* in tooltip when click on username */,
+.sidebar-nav-value /* stat in /stats/overview */,
+.overview-footer-container /* grid in /stats/overview */,
+.rating-block-container /* /stats/live/<time-control> */ {
+  display: none;
+}
+
+/* flag on homepage */
+.home-user-badges {
+  display: none;
+}
