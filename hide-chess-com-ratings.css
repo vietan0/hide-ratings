@@ -4,6 +4,8 @@
 .stat-text-data-highest /* stats in /member */,
 .rating-score-component /* below username in /game/live */,
 .user-tagline-rating /* next to username in /game/live */,
+.game-over-message-component .user-rating /* Game Over message in /game/live */,
+.game-over-message-component > span:last-child,
 .user-rating-component /* in tooltip when click on username */,
 .sidebar-nav-value /* stat in /stats/overview */,
 .overview-footer-container /* grid in /stats/overview */,
