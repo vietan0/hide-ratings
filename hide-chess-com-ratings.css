@@ -9,7 +9,8 @@
 .user-rating-component /* in tooltip when click on username */,
 .sidebar-nav-value /* stat in /stats/overview */,
 .overview-footer-container /* grid in /stats/overview */,
-.rating-block-container /* /stats/live/<time-control> */ {
+.rating-block-container /* /stats/live/<time-control> */,
+.sidebar-nav-item-value /* stat sidebar in /stats/live/<time-control> */ {
   display: none;
 }
 
