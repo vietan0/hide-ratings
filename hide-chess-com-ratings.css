@@ -11,7 +11,8 @@
 .sidebar-nav-value /* stat in /stats/overview */,
 .overview-footer-container /* grid in /stats/overview */,
 .rating-block-container /* /stats/live/<time-control> */,
-.sidebar-nav-item-value /* stat sidebar in /stats/live/<time-control> */ {
+.sidebar-nav-item-value /* stat sidebar in /stats/live/<time-control> */,
+.game-item-rating /* Load From Archive in /analysis */ {
   display: none;
 }
 
