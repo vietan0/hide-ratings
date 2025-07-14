@@ -8,6 +8,7 @@
     "48": "icons/chesslogo.png"
   },
   "permissions": [
+    "storage",
     "webRequest",
     "webRequestBlocking",
     "https://chess.wintrcat.uk/*"
@@ -16,6 +17,11 @@
     "scripts": [
       "hide-wintrcat-ratings-background.js"
     ]
+  },
+"browser_action": {
+    "default_icon": "icons/chesslogo.png",
+    "default_title": "Chess.com Tweaks",
+    "default_popup": "/popup/index.html"
   },
   "content_scripts": [
     {

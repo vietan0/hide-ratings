@@ -1,0 +1,9 @@
+/* todo: import Inter from Google Fonts */
+
+html {
+  font-family: 'Inter', system-ui, sans-serif;
+  /* font-size: 14px;
+  min-width: 300px;
+  background-color: rgb(29, 29, 29);
+  color: white; */
+}
