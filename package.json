@@ -3,9 +3,11 @@
   "version": "1.3.8",
   "scripts": {
     "build": "web-ext build",
+    "dev": "web-ext run --devtools --start-url www.chess.com",
     "lint": "eslint .",
-    "sign": "node sign.js",
-    "start:firefox": "web-ext run --devtools --start-url www.chess.com --start-url chess.wintrcat.uk"
+    "rollup-build": "rollup --config",
+    "rollup-watch": "rollup --config -w",
+    "sign": "node sign.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5"
@@ -14,6 +16,7 @@
     "@antfu/eslint-config": "^2.22.0",
     "eslint": "^9.6.0",
     "eslint-plugin-format": "^0.1.2",
+    "rollup": "^4.45.0",
     "web-ext": "^8.2.0"
   },
   "pnpm": {
