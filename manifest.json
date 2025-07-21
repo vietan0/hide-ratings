@@ -7,31 +7,29 @@
   "icons": {
     "48": "icons/chesslogo.png"
   },
+  "content_security_policy": "script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval' https://cdn.jsdelivr.net;",
   "permissions": [
+    "scripting",
     "storage",
+    "webNavigation",
     "webRequest",
     "webRequestBlocking",
-    "https://chess.wintrcat.uk/*"
+    "https://www.chess.com/*"
   ],
   "background": {
     "scripts": [
-      "hide-wintrcat-ratings-background.js"
+      "dist/background.js"
     ]
   },
-"browser_action": {
+  "browser_action": {
     "default_icon": "icons/chesslogo.png",
     "default_title": "Chess.com Tweaks",
     "default_popup": "/popup/index.html"
   },
   "content_scripts": [
     {
-      "matches": ["*://*.chess.com/*"],
-      "css": ["/hide-chess-com-ratings.css"],
-      "run_at": "document_start"
-    },
-    {
-      "matches": ["*://chess.wintrcat.uk/*"],
-      "js": ["/hide-wintrcat-ratings.js"]
+      "matches": ["*://www.chess.com/*"],
+      "js": ["dist/content.js"]
     }
   ],
   "browser_specific_settings": {

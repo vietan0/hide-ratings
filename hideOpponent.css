@@ -1,0 +1,16 @@
+.player-component.player-top
+  .player-avatar-component.player-avatar
+  > img:first-child {
+  display: none !important;
+}
+
+.player-component.player-top
+  .player-tagline
+  .cc-user-block-component
+  > :not(.connection-component) {
+  display: none !important;
+}
+
+.chat-room-chat > * {
+  display: none !important;
+}
