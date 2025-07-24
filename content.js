@@ -1,100 +1,148 @@
-import { overrideImg, restoreImg } from './changeImg';
+import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
+import gameLinkRegex from './gameLinkRegex';
 
 /**
- * This storage listener must be added here, in content script,
- * because I need tabId, which is not a property if sent from popup's script.
+ * - If return `{ cond: true }`, proceed to hide opponent.
+ * - If return `{ cond: false, reason: object }`, do nothing.
+ * - If return `{ cond: 'unhide', reason: object }`, proceed to unhide opponent.
+ * @returns {{cond: boolean | 'unhide', reason?: object}} whether all conditions to hideOpponent are met.
  */
-function notifyBackground(changes) {
-  const [changedFeature] = Object.keys(changes);
+async function checkHideOpponentConds() {
+  const url = window.location.href;
+  if (!url.match(gameLinkRegex))
+    return { cond: false, reason: { url } };
 
-  browser.runtime.sendMessage({
-    feature: changedFeature,
-    newValue: changes[changedFeature].newValue,
-    url: window.location.href, // because sender.url isn't reliably up-to-date
-  });
+  const placeholderImg = document.getElementById(placeholderImgId);
+  const gameOverModal = document.querySelector('.board-modal-container-container');
+  const gameOverModalNotInPage = !gameOverModal;
+
+  if (placeholderImg) {
+    if (!gameOverModalNotInPage)
+      return { cond: 'unhide', reason: { gameOverModalNotInPage: false } };
+
+    return { cond: false, reason: { placeholderImg } };
+  }
+
+  else {
+    const { usernames } = await browser.storage.local.get();
+    const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component'));
+    const usernamesInPage = usernameDivs.map(x => x.textContent);
+    const bothUsernamesLoaded = !usernamesInPage.includes('Opponent');
+    const usernameFromStorageIsInPage = usernames.some(u => usernamesInPage.includes(u));
+
+    if (!bothUsernamesLoaded) {
+      return { cond: false, reason: { bothUsernamesLoaded: false } };
+    }
+
+    if (!usernameFromStorageIsInPage) {
+      return { cond: false, reason: { usernameFromStorageIsInPage: false } };
+    }
+
+    if (!gameOverModalNotInPage) {
+      return { cond: false, reason: { gameOverModalNotInPage: false } };
+    }
+
+    const gameReviewBtn = document.querySelector('.game-review-buttons-component');
+    const gameReviewBtnNotInPage = !gameReviewBtn;
+
+    if (!gameReviewBtnNotInPage) {
+      return { cond: false, reason: { gameReviewBtnNotInPage: false } };
+    }
+
+    return { cond: true };
+  }
 }
 
-browser.storage.local.onChanged.addListener(notifyBackground);
+let port;
 
-/**
- * @type {[string, string]}
- */
-let usernamesInPage = [];
+async function connectToBackground() {
+  port = browser.runtime.connect({ name: 'my-content-script-port' });
+  const { hideRatings, hideOpponent } = await browser.storage.local.get();
 
-/**
- * Observe 2 player divs on top/bottom of the board,
- * keep the latest values in variable `usernamesInPage`,
- * which will be sent to background whenever background requests,
- * to determine whether hide opponent code should be run.
- */
-function observeUserBlocks() {
-  const userInfoDivs = Array.from(document.getElementsByClassName('player-component'));
+  // 1. page loads, check storage to see what to execute
+  if (hideRatings) {
+    port.postMessage({ command: 'hideRatings' });
+  }
 
-  const observer = new MutationObserver((mutationList) => {
-    for (const mutation of mutationList) {
-      const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component'));
+  if (hideOpponent) {
+    const topPlayerTaglineObserver = new MutationObserver(async (mutationList) => {
+      const topUserBlock = document.querySelector('.player-component.player-top .cc-user-block-component');
 
-      // filter out mutations that doesn't have one of usernameDivs as target or added node/removed node
-      if (mutation.target.contains(usernameDivs[0])
-        || mutation.target.contains(usernameDivs[1])
-      ) {
-        if (usernameDivs.length === 2
-          && !usernameDivs.some(div => div.textContent === 'Opponent')
-        ) {
-          usernamesInPage = usernameDivs.map(x => x.textContent);
+      if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
+        const result = await checkHideOpponentConds();
+
+        if (result.cond === true) {
+          port.postMessage({ command: 'hideOpponent' });
+          overrideImg();
+        }
+        else if (result.cond === 'unhide') {
+          port.postMessage({ command: 'unhideOpponent' });
+          restoreImg();
         }
       }
-    }
+    });
+
+    const topPlayerTagline = document.querySelector('.player-component.player-top .player-tagline');
+    topPlayerTaglineObserver.observe(topPlayerTagline, { subtree: true, childList: true });
+  }
+
+  // 2. add listeners
+  port.onMessage.addListener(async (message) => {
+    console.log('CS received message:', message);
   });
 
-  for (const div of userInfoDivs) {
-    observer.observe(div, { characterData: true, subtree: true, childList: true });
-  }
+  port.onDisconnect.addListener(() => {
+    console.log('CS: Port disconnected! Attempting to reconnect...');
+    // Attempt to reconnect if the background script was unloaded or connection was lost
+    // This is crucial for resilience, especially with Manifest V3 service workers
+    setTimeout(connectToBackground, 500); // Reconnect after a short delay
+  });
+
+  // Send an initial message to confirm the connection
+  port.postMessage({ command: 'ready' });
 }
 
-observeUserBlocks();
+// Call connect when the content script loads
+connectToBackground();
 
-/**
- * Observe the board, send `game-over` message to background whenever the Game Over modal pops up.
- */
-function observeBoard() {
-  const board = document.getElementById('board-layout-chessboard');
-  if (!board)
-    return;
+browser.storage.local.onChanged.addListener(async (changes) => {
+  const [changedFeature] = Object.keys(changes); // I can do this because I only change one item at a time
+  const newValue = changes[changedFeature].newValue;
 
-  const observer = new MutationObserver((mutationList) => {
-    for (const mutation of mutationList) {
-      const newNode = mutation.addedNodes.item(0);
+  if (changedFeature === 'hideOpponent') {
+    if (newValue) {
+      const result = await checkHideOpponentConds();
 
-      if (
-        newNode
-        && newNode.classList
-        && newNode.classList.contains('board-modal-container-container')
-      ) {
-        return browser.runtime.sendMessage('game-over');
+      if (result.cond === true) {
+        port.postMessage({ command: 'hideOpponent' });
+        overrideImg();
+      }
+      else if (result.cond === 'unhide') {
+        port.postMessage({ command: 'unhideOpponent' });
+        restoreImg();
       }
     }
-  });
-
-  observer.observe(board, { childList: true });
-}
-
-observeBoard();
-
-browser.runtime.onMessage.addListener((message) => {
-  if (message === 'search-for-username') {
-    // confirmed: live game URL, hideOpponent is true, usernames in storage isn't empty
-    const gameReviewBtn = document.querySelector('.game-review-buttons-component');
-    const gameResultSpan = document.querySelector('.game-result');
-
-    return Promise.resolve({ usernamesInPage, gameReviewBtn, gameResultSpan });
+    else {
+      port.postMessage({ command: 'unhideOpponent' });
+      restoreImg();
+    }
   }
 
-  if (message === 'hide') {
-    overrideImg();
-  }
+  else if (changedFeature === 'usernames') {
+    const { hideOpponent } = await browser.storage.local.get();
+    if (!hideOpponent)
+      return;
 
-  if (message === 'unhide') {
-    restoreImg();
+    const result = await checkHideOpponentConds();
+
+    if (result.cond === true) {
+      port.postMessage({ command: 'hideOpponent' });
+      overrideImg();
+    }
+    else {
+      // in this particular case, unhide even if cond is false
+      port.postMessage({ command: 'unhideOpponent' });
+      restoreImg();
+    }
   }
 });

@@ -29,7 +29,8 @@
   "content_scripts": [
     {
       "matches": ["*://www.chess.com/*"],
-      "js": ["dist/content.js"]
+      "js": ["dist/content.js"],
+      "run_at": "document_end"
     }
   ],
   "browser_specific_settings": {

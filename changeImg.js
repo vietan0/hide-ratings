@@ -6,10 +6,12 @@ function getTopPlayerColor() {
   return 'black';
 }
 
+export const placeholderImgId = 'placeholderImg';
+
 export function overrideImg() {
   const imgContainer = document.querySelector('.player-component.player-top .player-avatar-component.player-avatar');
   const placeholderImg = document.createElement('img');
-  placeholderImg.id = 'placeholderImg';
+  placeholderImg.id = placeholderImgId;
   placeholderImg.src = browser.runtime.getURL(`images/${getTopPlayerColor()}.png`);
 
   if (imgContainer.children.length === 2) {
@@ -19,6 +21,6 @@ export function overrideImg() {
 }
 
 export function restoreImg() {
-  // css will unhide the original, only need to remove the placeholder
-  document.getElementById('placeholderImg')?.remove();
+  // css will unhide the original, only need to remove the placeholderImg
+  document.getElementById(placeholderImgId)?.remove();
 }
