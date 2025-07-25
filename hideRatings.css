@@ -8,6 +8,7 @@
 .rating-score-component /* below username in /game/live */,
 .user-tagline-rating /* next to username in /game/live */,
 .cc-text-medium.cc-user-rating-white /* next to username in live games against bots */,
+.game-start-message-component /* Game Start message in /game/live */,
 .game-over-message-component /* Game Over message in /game/live */,
 .user-rating-component /* in tooltip when click on username */,
 .sidebar-nav-value /* stat in /stats/overview */,
