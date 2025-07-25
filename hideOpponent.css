@@ -11,6 +11,14 @@
   display: none !important;
 }
 
+/* focus mode */
+.player-component.player-top
+  .user-tagline-compact-theatre
+  .user-tagline-compact-row
+  > :not(.connection-component) {
+  display: none !important;
+}
+
 .chat-room-chat > * {
   display: none !important;
 }

@@ -25,7 +25,7 @@ async function checkHideOpponentConds() {
 
   else {
     const { usernames } = await browser.storage.local.get();
-    const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component'));
+    const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
     const usernamesInPage = usernameDivs.map(x => x.textContent);
     const bothUsernamesLoaded = !usernamesInPage.includes('Opponent');
     const usernameFromStorageIsInPage = usernames.some(u => usernamesInPage.includes(u));
@@ -72,8 +72,14 @@ async function connectToBackground() {
   }
 
   if (hideOpponent) {
+    const topPlayerTagline = document.querySelector('.player-component.player-top .player-tagline');
+    if (!topPlayerTagline)
+      return;
+
     const topPlayerTaglineObserver = new MutationObserver(async (mutationList) => {
-      const topUserBlock = document.querySelector('.player-component.player-top .cc-user-block-component');
+      const topUserBlock = document.querySelector('.player-component.player-top .cc-user-block-component, .player-component.player-top .user-tagline-compact-theatre');
+      if (!topUserBlock)
+        return;
 
       if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
         const result = await checkHideOpponentConds();
@@ -89,7 +95,6 @@ async function connectToBackground() {
       }
     });
 
-    const topPlayerTagline = document.querySelector('.player-component.player-top .player-tagline');
     topPlayerTaglineObserver.observe(topPlayerTagline, { subtree: true, childList: true });
   }
 
