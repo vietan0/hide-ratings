@@ -59,27 +59,55 @@ async function renderInput() {
 
   const input = document.createElement('input');
   input.id = 'input';
-  input.className = 'bg-zinc-800 w-full text-xs px-2 py-1.5 rounded-sm focus:outline focus:outline-2 focus:outline-[#81b64c]';
+  input.className = 'bg-zinc-800 flex-grow text-xs px-2 py-1.5 rounded-sm focus:outline focus:outline-2 focus:outline-[#81b64c]';
   input.placeholder = 'Seperated by comma';
   // display names from storage
   input.value = usernames.join(', ');
+
+  async function handleChange(e) {
+    const { usernames } = await browser.storage.local.get();
+    const displayedValue = usernames.join(', ');
+    const submit = document.getElementById('submit');
+
+    if (e.target.value === displayedValue) {
+      submit.disabled = true;
+    }
+    else {
+      submit.disabled = false;
+    }
+  }
+
+  input.oninput = handleChange;
   flex.append(input);
 
   const submit = document.createElement('button');
+  submit.id = 'submit';
   submit.textContent = 'Save';
-  submit.className = 'bg-[#81b64c] hover:opacity-75 active:opacity-100 cursor-pointer px-2 py-1.5 rounded-sm font-bold focus:outline focus:outline-2 focus:outline-white';
+  submit.className = 'bg-[#81b64c] w-12 flex justify-center text-center enabled:hover:outline enabled:hover:outline-2 enabled:hover:outline-white active:opacity-100 cursor-pointer px-2 py-1.5 rounded-sm font-bold focus:outline focus:outline-2 focus:outline-white disabled:opacity-50 disabled:cursor-default';
+  submit.disabled = true;
 
   async function saveUsernames(e) {
     e.preventDefault();
+    input.blur();
+    submit.innerHTML = '<img class="max-h-4" src="./LineMdConfirm.svg"/>';
 
-    if (input.value === '') {
+    setTimeout(() => {
+      submit.textContent = 'Save';
+      submit.disabled = true;
+    }, 1000);
+
+    const trimmedValue = input.value.trim();
+
+    if (trimmedValue === '') {
       await browser.storage.local.set({ usernames: [] });
+      input.value = '';
 
       return;
     }
 
     const commaRegex = /,\s*/g;
-    const usernames = input.value.trim().split(commaRegex);
+    const usernames = trimmedValue.split(commaRegex).map(n => n.trim());
+    input.value = usernames.join(', ');
     await browser.storage.local.set({ usernames });
   }
 
@@ -116,10 +144,7 @@ function handleChange(changes) {
    */
   const [changedFeature] = Object.keys(changes);
 
-  if (changedFeature === 'usernames') {
-    // possibly update hide opponent
-  }
-  else {
+  if (changedFeature !== 'usernames') {
     updateSwitchIcon(changedFeature);
 
     if (changedFeature === 'hideOpponent') {
