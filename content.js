@@ -39,7 +39,7 @@ async function checkHideOpponentConds() {
     }
 
     if (!gameOverModalNotInPage) {
-      return { cond: false, reason: { gameOverModalNotInPage: false } };
+      return { cond: 'unhide', reason: { gameOverModalNotInPage: false } };
     }
 
     const gameReviewBtn = document.querySelector('.game-review-buttons-component');
@@ -47,6 +47,13 @@ async function checkHideOpponentConds() {
 
     if (!gameReviewBtnNotInPage) {
       return { cond: false, reason: { gameReviewBtnNotInPage: false } };
+    }
+
+    const newGameBtns = document.querySelector('.new-game-buttons-component');
+    const newGameBtnsNotInPage = !newGameBtns;
+
+    if (!newGameBtnsNotInPage) {
+      return { cond: false, reason: { newGameBtnsNotInPage: false } };
     }
 
     return { cond: true };
