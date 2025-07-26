@@ -34,9 +34,9 @@ async function checkHideOpponentConds() {
   else {
     const { usernames } = await browser.storage.local.get();
     const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
-    const usernamesInPage = usernameDivs.map(x => x.textContent);
+    const usernamesInPage = usernameDivs.map(x => x.textContent.toLowerCase());
     const bothUsernamesLoaded = !usernamesInPage.includes('Opponent');
-    const usernameFromStorageIsInPage = usernames.some(u => usernamesInPage.includes(u));
+    const usernameFromStorageIsInPage = usernames.some(u => usernamesInPage.includes(u.toLowerCase()));
 
     if (!bothUsernamesLoaded) {
       return { cond: false, reason: { bothUsernamesLoaded: false } };
