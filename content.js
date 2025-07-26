@@ -1,13 +1,21 @@
 import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
+import { overrideUsername, restoreUsername } from './changeUsername';
 import gameLinkRegex from './gameLinkRegex';
 
+let port;
+
 /**
+ * This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
  * - If return `{ cond: true }`, proceed to hide opponent.
  * - If return `{ cond: false, reason: object }`, do nothing.
  * - If return `{ cond: 'unhide', reason: object }`, proceed to unhide opponent.
  * @returns {{cond: boolean | 'unhide', reason?: object}} whether all conditions to hideOpponent are met.
  */
 async function checkHideOpponentConds() {
+  // 1. url condition
+  // 2. already-run conditions
+  // 3. username-related conditions
+  // 4. game over-related conditions
   const url = window.location.href;
   if (!url.match(gameLinkRegex))
     return { cond: false, reason: { url } };
@@ -60,7 +68,17 @@ async function checkHideOpponentConds() {
   }
 }
 
-let port;
+function startHideOpponent() {
+  port.postMessage({ command: 'hideOpponent' });
+  overrideImg();
+  overrideUsername();
+}
+
+function stopHideOpponent() {
+  port.postMessage({ command: 'unhideOpponent' });
+  restoreImg();
+  restoreUsername();
+}
 
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
@@ -72,30 +90,52 @@ async function connectToBackground() {
   }
 
   if (hideOpponent) {
-    const topPlayerTagline = document.querySelector('.player-component.player-top .player-tagline');
-    if (!topPlayerTagline)
+    const topPlayerComp = document.querySelector('.player-component.player-top');
+    if (!topPlayerComp)
       return;
 
-    const topPlayerTaglineObserver = new MutationObserver(async (mutationList) => {
-      const topUserBlock = document.querySelector('.player-component.player-top .cc-user-block-component, .player-component.player-top .user-tagline-compact-theatre');
+    const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
+      const topUserBlock = topPlayerComp.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
       if (!topUserBlock)
         return;
 
-      if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
+      const focusModeWasToggled = mutationList.some(m =>
+        m.type === 'attributes'
+        && m.attributeName === 'class'
+        && m.oldValue.includes('player-component player-top'),
+      );
+
+      if (focusModeWasToggled) {
+        const { hideOpponent } = await browser.storage.local.get();
+
+        if (hideOpponent) {
+          const gameOverModal = document.querySelector('.board-modal-container-container');
+          const gameReviewBtn = document.querySelector('.game-review-buttons-component');
+          const newGameBtns = document.querySelector('.new-game-buttons-component');
+          if (!gameOverModal && !gameReviewBtn && !newGameBtns)
+            startHideOpponent();
+        }
+      }
+
+      else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
         const result = await checkHideOpponentConds();
 
         if (result.cond === true) {
-          port.postMessage({ command: 'hideOpponent' });
-          overrideImg();
+          startHideOpponent();
         }
         else if (result.cond === 'unhide') {
-          port.postMessage({ command: 'unhideOpponent' });
-          restoreImg();
+          stopHideOpponent();
         }
       }
     });
 
-    topPlayerTaglineObserver.observe(topPlayerTagline, { subtree: true, childList: true });
+    topPlayerCompObserver.observe(topPlayerComp, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ['class'],
+      attributeOldValue: true,
+    });
   }
 
   // 2. add listeners
@@ -126,17 +166,14 @@ browser.storage.local.onChanged.addListener(async (changes) => {
       const result = await checkHideOpponentConds();
 
       if (result.cond === true) {
-        port.postMessage({ command: 'hideOpponent' });
-        overrideImg();
+        startHideOpponent();
       }
       else if (result.cond === 'unhide') {
-        port.postMessage({ command: 'unhideOpponent' });
-        restoreImg();
+        stopHideOpponent();
       }
     }
     else {
-      port.postMessage({ command: 'unhideOpponent' });
-      restoreImg();
+      stopHideOpponent();
     }
   }
 
@@ -148,13 +185,11 @@ browser.storage.local.onChanged.addListener(async (changes) => {
     const result = await checkHideOpponentConds();
 
     if (result.cond === true) {
-      port.postMessage({ command: 'hideOpponent' });
-      overrideImg();
+      startHideOpponent();
     }
     else {
-      // in this particular case, unhide even if cond is false
-      port.postMessage({ command: 'unhideOpponent' });
-      restoreImg();
+      // in this particular case, unhide regardless of whether cond is 'unhide' or false
+      stopHideOpponent();
     }
   }
 });
