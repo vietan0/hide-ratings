@@ -1,4 +1,4 @@
-const placeholderUsername = 'Unknown';
+export const placeholderUsername = 'Unknown';
 
 export function overrideUsername() {
   if (document.getElementById(placeholderUsername))

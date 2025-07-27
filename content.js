@@ -1,38 +1,42 @@
 import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
-import { overrideUsername, restoreUsername } from './changeUsername';
+import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
 import gameLinkRegex from './gameLinkRegex';
 
 let port;
 
+function isGameOver() {
+  const gameOverModal = document.querySelector('.board-modal-container-container');
+  const gameReviewBtn = document.querySelector('.game-review-buttons-component');
+  const newGameBtns = document.querySelector('.new-game-buttons-component');
+
+  if (gameOverModal || gameReviewBtn || newGameBtns) {
+    return { cond: false, reason: 'gameover' };
+  }
+}
+
+function hideOpponentInEffect() {
+  const placeholderImg = document.getElementById(placeholderImgId);
+  const placeholderUsernameDiv = document.getElementById(placeholderUsername);
+
+  return Boolean(placeholderImg || placeholderUsernameDiv);
+}
+
 /**
- * This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
+ * - This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
+* - This function doesn't check if hideOpponent is already in effect (avatar & username replaced)
  * - If return `{ cond: true }`, proceed to hide opponent.
- * - If return `{ cond: false, reason: object }`, do nothing.
- * - If return `{ cond: 'unhide', reason: object }`, proceed to unhide opponent.
- * @returns {{cond: boolean | 'unhide', reason?: object}} whether all conditions to hideOpponent are met.
+ * - If return `{ cond: false, reason: object }`, use `hideOpponentInEffect()` to decide what to do.
+ * @returns {{cond: boolean, reason?: object}} whether all conditions to hideOpponent are met.
  */
 async function checkHideOpponentConds() {
   // 1. url condition
-  // 2. already-run conditions
-  // 3. username-related conditions
-  // 4. game over-related conditions
+  // 2. username-related conditions
+  // 3. game over-related conditions
   const url = window.location.href;
   if (!url.match(gameLinkRegex))
     return { cond: false, reason: { url } };
 
-  const placeholderImg = document.getElementById(placeholderImgId);
-  const gameOverModal = document.querySelector('.board-modal-container-container');
-  const gameOverModalNotInPage = !gameOverModal;
-
-  if (placeholderImg) {
-    if (!gameOverModalNotInPage)
-      return { cond: 'unhide', reason: { gameOverModalNotInPage: false } };
-
-    return { cond: false, reason: { placeholderImg } };
-  }
-
-  else {
-    const { usernames } = await browser.storage.local.get();
+      const { usernames } = await browser.storage.local.get();
     const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
     const usernamesInPage = usernameDivs.map(x => x.textContent.toLowerCase());
     const bothUsernamesLoaded = !usernamesInPage.includes('Opponent');
@@ -46,26 +50,7 @@ async function checkHideOpponentConds() {
       return { cond: false, reason: { usernameFromStorageIsInPage: false } };
     }
 
-    if (!gameOverModalNotInPage) {
-      return { cond: 'unhide', reason: { gameOverModalNotInPage: false } };
-    }
-
-    const gameReviewBtn = document.querySelector('.game-review-buttons-component');
-    const gameReviewBtnNotInPage = !gameReviewBtn;
-
-    if (!gameReviewBtnNotInPage) {
-      return { cond: false, reason: { gameReviewBtnNotInPage: false } };
-    }
-
-    const newGameBtns = document.querySelector('.new-game-buttons-component');
-    const newGameBtnsNotInPage = !newGameBtns;
-
-    if (!newGameBtnsNotInPage) {
-      return { cond: false, reason: { newGameBtnsNotInPage: false } };
-    }
-
-    return { cond: true };
-  }
+    return isGameOver() || { cond: true };
 }
 
 function startHideOpponent() {
@@ -118,13 +103,19 @@ async function connectToBackground() {
       }
 
       else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
-        const result = await checkHideOpponentConds();
-
-        if (result.cond === true) {
-          startHideOpponent();
-        }
-        else if (result.cond === 'unhide') {
+        if (hideOpponentInEffect() && isGameOver()) {
           stopHideOpponent();
+        }
+else {
+          const { hideOpponent } = await browser.storage.local.get();
+
+          if (hideOpponent) {
+            const result = await checkHideOpponentConds();
+
+            if (result.cond) {
+              startHideOpponent();
+            }
+          }
         }
       }
     });
@@ -165,13 +156,10 @@ browser.storage.local.onChanged.addListener(async (changes) => {
     if (newValue) {
       const result = await checkHideOpponentConds();
 
-      if (result.cond === true) {
+      if (result.cond) {
         startHideOpponent();
       }
-      else if (result.cond === 'unhide') {
-        stopHideOpponent();
-      }
-    }
+          }
     else {
       stopHideOpponent();
     }
@@ -184,11 +172,11 @@ browser.storage.local.onChanged.addListener(async (changes) => {
 
     const result = await checkHideOpponentConds();
 
-    if (result.cond === true) {
+    if (result.cond) {
       startHideOpponent();
     }
     else {
-      // in this particular case, unhide regardless of whether cond is 'unhide' or false
+      if (result.reason.usernameFromStorageIsInPage === false) // undefined if reason doesn't contain this key
       stopHideOpponent();
     }
   }
