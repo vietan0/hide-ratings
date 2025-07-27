@@ -23,7 +23,7 @@ function hideOpponentInEffect() {
 
 /**
  * - This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
-* - This function doesn't check if hideOpponent is already in effect (avatar & username replaced)
+ * - This function doesn't check if hideOpponent code is already in effect (avatar & username replaced)
  * - If return `{ cond: true }`, proceed to hide opponent.
  * - If return `{ cond: false, reason: object }`, use `hideOpponentInEffect()` to decide what to do.
  * @returns {{cond: boolean, reason?: object}} whether all conditions to hideOpponent are met.
@@ -36,21 +36,22 @@ async function checkHideOpponentConds() {
   if (!url.match(gameLinkRegex))
     return { cond: false, reason: { url } };
 
-      const { usernames } = await browser.storage.local.get();
-    const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
-    const usernamesInPage = usernameDivs.map(x => x.textContent.toLowerCase());
-    const bothUsernamesLoaded = !usernamesInPage.includes('Opponent');
-    const usernameFromStorageIsInPage = usernames.some(u => usernamesInPage.includes(u.toLowerCase()));
+  const { usernames } = await browser.storage.local.get();
+  const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
+  const usernamesInPage = usernameDivs.map(x => x.textContent.toLowerCase());
+  const bothUsernamesLoaded = !usernamesInPage.includes('Opponent');
 
-    if (!bothUsernamesLoaded) {
-      return { cond: false, reason: { bothUsernamesLoaded: false } };
-    }
+  if (!bothUsernamesLoaded) {
+    return { cond: false, reason: { bothUsernamesLoaded: false } };
+  }
 
-    if (!usernameFromStorageIsInPage) {
-      return { cond: false, reason: { usernameFromStorageIsInPage: false } };
-    }
+  const usernameFromStorageIsInPage = usernames.some(u => usernamesInPage.includes(u.toLowerCase()));
 
-    return isGameOver() || { cond: true };
+  if (!usernameFromStorageIsInPage) {
+    return { cond: false, reason: { usernameFromStorageIsInPage: false } };
+  }
+
+  return isGameOver() || { cond: true };
 }
 
 function startHideOpponent() {
@@ -63,6 +64,28 @@ function stopHideOpponent() {
   port.postMessage({ command: 'unhideOpponent' });
   restoreImg();
   restoreUsername();
+}
+
+/**
+ * Run:
+ * 1. When port first connects
+ * 2. In mutation observer
+ */
+async function hideOrUnhide() {
+  if (hideOpponentInEffect() && isGameOver()) {
+    stopHideOpponent();
+  }
+  else {
+    const { hideOpponent } = await browser.storage.local.get();
+
+    if (hideOpponent) {
+      const result = await checkHideOpponentConds();
+
+      if (result.cond) {
+        startHideOpponent();
+      }
+    }
+  }
 }
 
 async function connectToBackground() {
@@ -78,6 +101,7 @@ async function connectToBackground() {
     const topPlayerComp = document.querySelector('.player-component.player-top');
     if (!topPlayerComp)
       return;
+    hideOrUnhide();
 
     const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
       const topUserBlock = topPlayerComp.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
@@ -93,30 +117,13 @@ async function connectToBackground() {
       if (focusModeWasToggled) {
         const { hideOpponent } = await browser.storage.local.get();
 
-        if (hideOpponent) {
-          const gameOverModal = document.querySelector('.board-modal-container-container');
-          const gameReviewBtn = document.querySelector('.game-review-buttons-component');
-          const newGameBtns = document.querySelector('.new-game-buttons-component');
-          if (!gameOverModal && !gameReviewBtn && !newGameBtns)
-            startHideOpponent();
+        if (hideOpponent && !isGameOver()) {
+          startHideOpponent();
         }
       }
 
       else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
-        if (hideOpponentInEffect() && isGameOver()) {
-          stopHideOpponent();
-        }
-else {
-          const { hideOpponent } = await browser.storage.local.get();
-
-          if (hideOpponent) {
-            const result = await checkHideOpponentConds();
-
-            if (result.cond) {
-              startHideOpponent();
-            }
-          }
-        }
+        hideOrUnhide();
       }
     });
 
@@ -159,7 +166,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
       if (result.cond) {
         startHideOpponent();
       }
-          }
+    }
     else {
       stopHideOpponent();
     }
@@ -177,7 +184,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
     }
     else {
       if (result.reason.usernameFromStorageIsInPage === false) // undefined if reason doesn't contain this key
-      stopHideOpponent();
+        stopHideOpponent();
     }
   }
 });
