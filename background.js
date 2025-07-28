@@ -25,18 +25,20 @@ browser.runtime.onConnect.addListener((p) => {
   console.log('BG: Port connected!', port.name);
 
   port.onMessage.addListener(async (message) => {
-    const hideOpponentArgs = { files: ['hideOpponent.css'], target: { tabId: port.sender.tab.id } };
-
     if (message.command === 'hideRatings') {
       await browser.scripting.insertCSS({ files: ['hideRatings.css'], target: { tabId: port.sender.tab.id } });
     }
 
     if (message.command === 'hideOpponent') {
-      await browser.scripting.insertCSS(hideOpponentArgs);
+      const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+
+      Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS({ files: ['hideOpponent.css'], target: { tabId: id } })));
     }
 
     if (message.command === 'unhideOpponent') {
-      await browser.scripting.removeCSS(hideOpponentArgs);
+      const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+
+      Promise.all(tabs.map(({ id }) => browser.scripting.removeCSS({ files: ['hideOpponent.css'], target: { tabId: id } })));
     }
 
     if (message.command === 'hideFlags') {
@@ -55,12 +57,15 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   const newValue = changes[changedFeature].newValue;
 
   if (changedFeature === 'hideRatings') {
-    const hideRatingsArgs = { files: ['hideRatings.css'], target: { tabId: port.sender.tab.id } };
+    const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 
-    if (newValue)
-      await browser.scripting.insertCSS(hideRatingsArgs);
-    else
-      await browser.scripting.removeCSS(hideRatingsArgs);
+    Promise.all(tabs.map(({ id }) => {
+      const hideRatingsArgs = { files: ['hideRatings.css'], target: { tabId: id } };
+
+      return newValue
+        ? browser.scripting.insertCSS(hideRatingsArgs)
+        : browser.scripting.removeCSS(hideRatingsArgs);
+    }));
   }
   else if (changedFeature === 'hideOpponent' || changedFeature === 'usernames') {
     // content will handle it and tell background what to do
@@ -74,7 +79,6 @@ browser.storage.local.onChanged.addListener(async (changes) => {
       return newValue
         ? browser.scripting.insertCSS(hideFlagsArgs)
         : browser.scripting.removeCSS(hideFlagsArgs);
-    },
-    ));
+    }));
   }
 });
