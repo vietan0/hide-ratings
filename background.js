@@ -38,6 +38,10 @@ browser.runtime.onConnect.addListener((p) => {
     if (message.command === 'unhideOpponent') {
       await browser.scripting.removeCSS(hideOpponentArgs);
     }
+
+    if (message.command === 'hideFlags') {
+      await browser.scripting.insertCSS({ files: ['hideFlags.css'], target: { tabId: port.sender.tab.id } });
+    }
   });
 
   port.onDisconnect.addListener(() => {
@@ -60,5 +64,17 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   }
   else if (changedFeature === 'hideOpponent' || changedFeature === 'usernames') {
     // content will handle it and tell background what to do
+  }
+  else if (changedFeature === 'hideFlags') {
+    const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+
+    Promise.all(tabs.map(({ id }) => {
+      const hideFlagsArgs = { files: ['hideFlags.css'], target: { tabId: id } };
+
+      return newValue
+        ? browser.scripting.insertCSS(hideFlagsArgs)
+        : browser.scripting.removeCSS(hideFlagsArgs);
+    },
+    ));
   }
 });

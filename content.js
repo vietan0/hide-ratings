@@ -90,7 +90,7 @@ async function hideOrUnhide() {
 
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
-  const { hideRatings, hideOpponent } = await browser.storage.local.get();
+  const { hideRatings, hideOpponent, hideFlags } = await browser.storage.local.get();
 
   // 1. page loads, check storage to see what to execute
   if (hideRatings) {
@@ -134,6 +134,10 @@ async function connectToBackground() {
       attributeFilter: ['class'],
       attributeOldValue: true,
     });
+  }
+
+  if (hideFlags) {
+    port.postMessage({ command: 'hideFlags' });
   }
 
   // 2. add listeners
