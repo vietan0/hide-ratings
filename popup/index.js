@@ -39,88 +39,6 @@ async function renderBtns() {
   }
 }
 
-async function renderInput() {
-  const { hideOpponent, usernames } = await browser.storage.local.get();
-  // should run on popup AND on local changes
-  const hideOpponentContainer = document.getElementById('container-hideOpponent');
-  const form = document.createElement('form');
-  form.id = 'form';
-  form.className = 'hidden text-xs px-2 py-1.5 bg-zinc-700';
-  hideOpponentContainer.append(form);
-
-  const label = document.createElement('label');
-  label.className = 'text-xs';
-  label.textContent = 'Your username(s)';
-  form.append(label);
-
-  const flex = document.createElement('div');
-  flex.className = 'flex gap-1 mt-1';
-  form.append(flex);
-
-  const input = document.createElement('input');
-  input.id = 'input';
-  input.className = 'bg-zinc-800 flex-grow text-xs px-2 py-1.5 rounded-sm focus:outline focus:outline-2 focus:outline-[#81b64c] disabled:opacity-50';
-  input.placeholder = 'Seperated by comma';
-  // display names from storage
-  input.value = usernames.join(', ');
-
-  async function handleChange(e) {
-    const { usernames } = await browser.storage.local.get();
-    const displayedValue = usernames.join(', ');
-    const submit = document.getElementById('submit');
-
-    if (e.target.value === displayedValue) {
-      submit.disabled = true;
-    }
-    else {
-      submit.disabled = false;
-    }
-  }
-
-  input.oninput = handleChange;
-  flex.append(input);
-
-  const submit = document.createElement('button');
-  submit.id = 'submit';
-  submit.textContent = 'Save';
-  submit.className = 'bg-[#81b64c] w-12 flex justify-center text-center enabled:hover:outline enabled:hover:outline-2 enabled:hover:outline-white active:opacity-100 cursor-pointer px-2 py-1.5 rounded-sm font-bold focus:outline focus:outline-2 focus:outline-white disabled:opacity-50 disabled:cursor-default';
-  submit.disabled = true;
-
-  async function saveUsernames(e) {
-    e.preventDefault();
-    input.blur();
-    input.disabled = true;
-    submit.innerHTML = '<img class="max-h-4" src="./LineMdConfirm.svg"/>';
-
-    setTimeout(() => {
-      submit.textContent = 'Save';
-      submit.disabled = true;
-      input.disabled = false;
-    }, 500);
-
-    const trimmedValue = input.value.trim();
-
-    if (trimmedValue === '') {
-      await browser.storage.local.set({ usernames: [] });
-      input.value = '';
-
-      return;
-    }
-
-    const commaRegex = /,\s*/g;
-    const usernames = trimmedValue.split(commaRegex).map(n => n.trim());
-    input.value = usernames.join(', ');
-    await browser.storage.local.set({ usernames });
-  }
-
-  submit.onclick = saveUsernames;
-  flex.append(submit);
-
-  if (hideOpponent) {
-    form.classList.remove('hidden');
-  }
-}
-
 function updateSwitchIcon(changedFeature) {
   const btn = document.getElementById(changedFeature);
   const oldSwitchIcon = document.getElementById(`switch-${changedFeature}`);
@@ -128,32 +46,10 @@ function updateSwitchIcon(changedFeature) {
   oldSwitchIcon.remove();
 }
 
-function toggleHideOpponentForm(changes) {
-  const newValue = changes.hideOpponent.newValue;
-  const form = document.getElementById('form');
-
-  if (newValue) {
-    form.classList.remove('hidden');
-  }
-  else {
-    form.classList.add('hidden');
-  }
-}
-
 renderBtns();
-renderInput();
 
 browser.storage.local.onChanged.addListener((changes) => {
-  /**
-   * @type {'hideRatings' | 'hideOpponent' | 'hideFlags' | 'usernames'}
-   */
   const [changedFeature] = Object.keys(changes);
 
-  if (changedFeature !== 'usernames') {
-    updateSwitchIcon(changedFeature);
-
-    if (changedFeature === 'hideOpponent') {
-      toggleHideOpponentForm(changes);
-    }
-  }
+  updateSwitchIcon(changedFeature);
 });

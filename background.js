@@ -11,7 +11,6 @@ async function initiateStorage() {
       initialValues[feature] = false;
     }
 
-    initialValues.usernames = [];
     await browser.storage.local.set(initialValues);
   }
 }
@@ -68,8 +67,8 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   const [changedFeature] = Object.keys(changes); // I can do this because I only change one item at a time
   const newValue = changes[changedFeature].newValue;
 
-  if (changedFeature === 'hideRatings' || changedFeature === 'hideFlags' || changedFeature === 'hideOwnFlagOnHome') {
-    // changes to hideOpponent, usernames are handled by content script
+  if (changedFeature !== 'hideOpponent') {
+    // changes to hideOpponent are handled by content script
     const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 
     Promise.all(tabs.map(({ id }) =>

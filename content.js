@@ -1,23 +1,17 @@
 import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
 import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
-import gameLinkRegex from './gameLinkRegex';
 
 let port;
 
-async function usernameFail() {
-  const { usernames } = await browser.storage.local.get();
+function usernameFail() {
+  const currentUsername = document.getElementById('notifications-request').getAttribute('username');
   const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
   const usernamesInPage = usernameDivs.map(x => x.textContent.toLowerCase());
   const bothUsernamesLoaded = !usernamesInPage.includes('Opponent');
+  const currentUserPlaying = usernamesInPage.includes(currentUsername.toLowerCase());
 
-  if (!bothUsernamesLoaded) {
-    return { cond: false, reason: { bothUsernamesLoaded: false } };
-  }
-
-  const usernameFromStorageIsInPage = usernames.some(u => usernamesInPage.includes(u.toLowerCase()));
-
-  if (!usernameFromStorageIsInPage) {
-    return { cond: false, reason: { usernameFromStorageIsInPage: false } };
+  if (!bothUsernamesLoaded || !currentUserPlaying) {
+    return { cond: false, reason: 'username' };
   }
 }
 
@@ -42,18 +36,17 @@ function hideOpponentInEffect() {
  * - This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
  * - This function doesn't check if hideOpponent code is already in effect (avatar & username replaced)
  * - If return `{ cond: true }`, proceed to hide opponent.
- * - If return `{ cond: false, reason: object }`, unhide/do nothing depends on the case.
- * @returns {{cond: boolean, reason?: object}} whether all conditions to invoke `startHideOpponent()` are met.
+ * - If return `{ cond: false, reason: string }`, unhide/do nothing depends on the case.
+ * @returns {{cond: boolean, reason?: string}} whether all conditions to invoke `startHideOpponent()` are met.
  */
 async function checkHideOpponentConds() {
   // 1. url condition
   // 2. username-related conditions
   // 3. game over-related conditions
-  const url = window.location.href;
-  if (!url.match(gameLinkRegex))
-    return { cond: false, reason: { url } };
+  if (!window.location.href.match(/chess.com\/game\/\d+$/))
+    return { cond: false, reason: 'url-not-match' };
 
-  return await usernameFail() || isGameOver() || { cond: true };
+  return usernameFail() || isGameOver() || { cond: true };
 }
 
 function startHideOpponent() {
@@ -119,7 +112,7 @@ async function connectToBackground() {
       if (focusModeWasToggled) {
         const { hideOpponent } = await browser.storage.local.get();
 
-        if (hideOpponent && !(await usernameFail()) && !isGameOver()) {
+        if (hideOpponent && !usernameFail() && !isGameOver()) {
           startHideOpponent();
         }
       }
@@ -176,22 +169,6 @@ browser.storage.local.onChanged.addListener(async (changes) => {
     }
     else {
       stopHideOpponent();
-    }
-  }
-
-  else if (changedFeature === 'usernames') {
-    const { hideOpponent } = await browser.storage.local.get();
-    if (!hideOpponent)
-      return;
-
-    const result = await checkHideOpponentConds();
-
-    if (result.cond) {
-      startHideOpponent();
-    }
-    else {
-      if (result.reason.usernameFromStorageIsInPage === false) // undefined if reason doesn't contain this key
-        stopHideOpponent();
     }
   }
 });
