@@ -18,6 +18,16 @@ async function initiateStorage() {
 
 initiateStorage();
 
+/**
+ *
+ * @param {string} filename Name of the CSS file, no extension included.
+ * @param {number} tabId
+ * @returns {{ files: string[], target: { tabId: number }}} A `details` object to pass as argument into `insertCSS()` or `removeCSS()`
+ */
+function getCSSDetails(filename, tabId) {
+  return { files: [`${filename}.css`], target: { tabId } };
+}
+
 let port;
 
 browser.runtime.onConnect.addListener((p) => {
@@ -25,24 +35,22 @@ browser.runtime.onConnect.addListener((p) => {
   console.log('BG: Port connected!', port.name);
 
   port.onMessage.addListener(async (message) => {
+    const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+
     if (message.command === 'hideRatings') {
-      await browser.scripting.insertCSS({ files: ['hideRatings.css'], target: { tabId: port.sender.tab.id } });
+      Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideRatings', id))));
     }
 
     if (message.command === 'hideOpponent') {
-      const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
-
-      Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS({ files: ['hideOpponent.css'], target: { tabId: id } })));
+      Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideOpponent', id))));
     }
 
     if (message.command === 'unhideOpponent') {
-      const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
-
-      Promise.all(tabs.map(({ id }) => browser.scripting.removeCSS({ files: ['hideOpponent.css'], target: { tabId: id } })));
+      Promise.all(tabs.map(({ id }) => browser.scripting.removeCSS(getCSSDetails('hideOpponent', id))));
     }
 
     if (message.command === 'hideFlags') {
-      await browser.scripting.insertCSS({ files: ['hideFlags.css'], target: { tabId: port.sender.tab.id } });
+      Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideFlags', id))));
     }
   });
 
@@ -59,13 +67,11 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   if (changedFeature === 'hideRatings') {
     const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 
-    Promise.all(tabs.map(({ id }) => {
-      const hideRatingsArgs = { files: ['hideRatings.css'], target: { tabId: id } };
-
-      return newValue
-        ? browser.scripting.insertCSS(hideRatingsArgs)
-        : browser.scripting.removeCSS(hideRatingsArgs);
-    }));
+    Promise.all(tabs.map(({ id }) =>
+      newValue
+        ? browser.scripting.insertCSS(getCSSDetails('hideRatings', id))
+        : browser.scripting.removeCSS(getCSSDetails('hideRatings', id)),
+    ));
   }
   else if (changedFeature === 'hideOpponent' || changedFeature === 'usernames') {
     // content will handle it and tell background what to do
@@ -73,12 +79,10 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   else if (changedFeature === 'hideFlags') {
     const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 
-    Promise.all(tabs.map(({ id }) => {
-      const hideFlagsArgs = { files: ['hideFlags.css'], target: { tabId: id } };
-
-      return newValue
-        ? browser.scripting.insertCSS(hideFlagsArgs)
-        : browser.scripting.removeCSS(hideFlagsArgs);
-    }));
+    Promise.all(tabs.map(({ id }) =>
+      newValue
+        ? browser.scripting.insertCSS(getCSSDetails('hideFlags', id))
+        : browser.scripting.removeCSS(getCSSDetails('hideFlags', id)),
+    ));
   }
 });
