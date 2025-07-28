@@ -59,7 +59,7 @@ async function renderInput() {
 
   const input = document.createElement('input');
   input.id = 'input';
-  input.className = 'bg-zinc-800 flex-grow text-xs px-2 py-1.5 rounded-sm focus:outline focus:outline-2 focus:outline-[#81b64c]';
+  input.className = 'bg-zinc-800 flex-grow text-xs px-2 py-1.5 rounded-sm focus:outline focus:outline-2 focus:outline-[#81b64c] disabled:opacity-50';
   input.placeholder = 'Seperated by comma';
   // display names from storage
   input.value = usernames.join(', ');
@@ -89,12 +89,14 @@ async function renderInput() {
   async function saveUsernames(e) {
     e.preventDefault();
     input.blur();
+    input.disabled = true;
     submit.innerHTML = '<img class="max-h-4" src="./LineMdConfirm.svg"/>';
 
     setTimeout(() => {
       submit.textContent = 'Save';
       submit.disabled = true;
-    }, 1000);
+      input.disabled = false;
+    }, 500);
 
     const trimmedValue = input.value.trim();
 
@@ -138,7 +140,10 @@ function toggleHideOpponentForm(changes) {
   }
 }
 
-function handleChange(changes) {
+renderBtns();
+renderInput();
+
+browser.storage.local.onChanged.addListener((changes) => {
   /**
    * @type {'hideRatings' | 'hideOpponent' | 'hideFlags' | 'usernames'}
    */
@@ -151,8 +156,4 @@ function handleChange(changes) {
       toggleHideOpponentForm(changes);
     }
   }
-}
-
-renderBtns();
-renderInput();
-browser.storage.local.onChanged.addListener(handleChange);
+});
