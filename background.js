@@ -37,20 +37,24 @@ browser.runtime.onConnect.addListener((p) => {
   port.onMessage.addListener(async (message) => {
     const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 
-    if (message.command === 'hideRatings') {
-      Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideRatings', id))));
-    }
-
-    if (message.command === 'hideOpponent') {
-      Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideOpponent', id))));
-    }
-
-    if (message.command === 'unhideOpponent') {
-      Promise.all(tabs.map(({ id }) => browser.scripting.removeCSS(getCSSDetails('hideOpponent', id))));
-    }
-
-    if (message.command === 'hideFlags') {
-      Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideFlags', id))));
+    switch (message.command) {
+      case 'hideRatings':
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideRatings', id))));
+        break;
+      case 'hideOpponent':
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideOpponent', id))));
+        break;
+      case 'unhideOpponent':
+        Promise.all(tabs.map(({ id }) => browser.scripting.removeCSS(getCSSDetails('hideOpponent', id))));
+        break;
+      case 'hideFlags':
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideFlags', id))));
+        break;
+      case 'hideOwnFlagOnHome':
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideOwnFlagOnHome', id))));
+        break;
+      default:
+        throw new Error(`Unhandled message.command: ${message.command}`);
     }
   });
 
@@ -64,25 +68,14 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   const [changedFeature] = Object.keys(changes); // I can do this because I only change one item at a time
   const newValue = changes[changedFeature].newValue;
 
-  if (changedFeature === 'hideRatings') {
+  if (changedFeature === 'hideRatings' || changedFeature === 'hideFlags' || changedFeature === 'hideOwnFlagOnHome') {
+    // changes to hideOpponent, usernames are handled by content script
     const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 
     Promise.all(tabs.map(({ id }) =>
       newValue
-        ? browser.scripting.insertCSS(getCSSDetails('hideRatings', id))
-        : browser.scripting.removeCSS(getCSSDetails('hideRatings', id)),
-    ));
-  }
-  else if (changedFeature === 'hideOpponent' || changedFeature === 'usernames') {
-    // content will handle it and tell background what to do
-  }
-  else if (changedFeature === 'hideFlags') {
-    const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
-
-    Promise.all(tabs.map(({ id }) =>
-      newValue
-        ? browser.scripting.insertCSS(getCSSDetails('hideFlags', id))
-        : browser.scripting.removeCSS(getCSSDetails('hideFlags', id)),
+        ? browser.scripting.insertCSS(getCSSDetails(changedFeature, id))
+        : browser.scripting.removeCSS(getCSSDetails(changedFeature, id)),
     ));
   }
 });

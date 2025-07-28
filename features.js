@@ -1,1 +1,1 @@
-export default ['hideRatings', 'hideOpponent', 'hideFlags'];
+export default ['hideRatings', 'hideOpponent', 'hideFlags', 'hideOwnFlagOnHome'];

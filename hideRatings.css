@@ -18,8 +18,3 @@
 .game-item-rating /* Load From Archive in /analysis */ {
   display: none;
 }
-
-/* flag on homepage */
-.home-user-badges {
-  display: none;
-}

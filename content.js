@@ -90,7 +90,7 @@ async function hideOrUnhide() {
 
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
-  const { hideRatings, hideOpponent, hideFlags } = await browser.storage.local.get();
+  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome } = await browser.storage.local.get();
 
   // 1. page loads, check storage to see what to execute
   if (hideRatings) {
@@ -140,6 +140,10 @@ async function connectToBackground() {
     port.postMessage({ command: 'hideFlags' });
   }
 
+  if (hideOwnFlagOnHome) {
+    port.postMessage({ command: 'hideOwnFlagOnHome' });
+  }
+
   // 2. add listeners
   port.onMessage.addListener(async (message) => {
     console.log('CS received message:', message);
@@ -151,9 +155,6 @@ async function connectToBackground() {
     // This is crucial for resilience, especially with Manifest V3 service workers
     setTimeout(connectToBackground, 500); // Reconnect after a short delay
   });
-
-  // Send an initial message to confirm the connection
-  port.postMessage({ command: 'ready' });
 }
 
 // Call connect when the content script loads
