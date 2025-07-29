@@ -19,8 +19,9 @@ function isGameOver() {
   const gameOverModal = document.querySelector('.board-modal-container-container');
   const gameReviewBtn = document.querySelector('.game-review-buttons-component');
   const newGameBtns = document.querySelector('.new-game-buttons-component');
+  const nextGameBtn = document.querySelector('.arena-footer-component > .cc-button-component');
 
-  if (gameOverModal || gameReviewBtn || newGameBtns) {
+  if (gameOverModal || gameReviewBtn || newGameBtns || nextGameBtn) {
     return { cond: false, reason: 'gameover' };
   }
 }
@@ -43,7 +44,7 @@ async function checkHideOpponentConds() {
   // 1. url condition
   // 2. username-related conditions
   // 3. game over-related conditions
-  if (!window.location.href.match(/chess.com\/game\/\d+$/))
+  if (!window.location.href.match(/chess.com\/game\/(live\/)?\d+$/))
     return { cond: false, reason: 'url-not-match' };
 
   return usernameFail() || isGameOver() || { cond: true };
