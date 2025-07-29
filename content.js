@@ -111,11 +111,7 @@ async function connectToBackground() {
       );
 
       if (focusModeWasToggled) {
-        const { hideOpponent } = await browser.storage.local.get();
-
-        if (hideOpponent && !usernameFail() && !isGameOver()) {
-          startHideOpponent();
-        }
+        hideOrUnhide();
       }
 
       else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
