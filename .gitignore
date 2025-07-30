@@ -3,3 +3,4 @@ node_modules
 .amo-upload-uuid
 .zip
 web-ext-artifacts
+dist

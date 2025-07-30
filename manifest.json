@@ -1,31 +1,35 @@
 {
   "manifest_version": 2,
-  "name": "Hide Chess.com Ratings",
-  "version": "1.3.8",
+  "name": "Chess.com Tweaks",
+  "version": "1.4.0",
   "homepage_url": "https://github.com/vietan0/hide-ratings",
-  "description": "Hide Chess.com and Wintrcat's Game Review ratings to help you focus on playing at your best - without distraction.",
+  "description": "Chess.com Tweaks is a Firefox extension that helps you customize your Chess.com experience. It lets you hide all player ratings in games and stats, hide opponent details during live games, and hide all flags next to usernames, including your own on the homepage.",
   "icons": {
     "48": "icons/chesslogo.png"
   },
   "permissions": [
+    "scripting",
+    "storage",
+    "webNavigation",
     "webRequest",
     "webRequestBlocking",
-    "https://chess.wintrcat.uk/*"
+    "https://www.chess.com/*"
   ],
   "background": {
     "scripts": [
-      "hide-wintrcat-ratings-background.js"
+      "dist/background.js"
     ]
+  },
+  "browser_action": {
+    "default_icon": "icons/chesslogo.png",
+    "default_title": "Chess.com Tweaks",
+    "default_popup": "/popup/index.html"
   },
   "content_scripts": [
     {
-      "matches": ["*://*.chess.com/*"],
-      "css": ["/hide-chess-com-ratings.css"],
-      "run_at": "document_start"
-    },
-    {
-      "matches": ["*://chess.wintrcat.uk/*"],
-      "js": ["/hide-wintrcat-ratings.js"]
+      "matches": ["*://www.chess.com/*"],
+      "js": ["dist/content.js"],
+      "run_at": "document_end"
     }
   ],
   "browser_specific_settings": {

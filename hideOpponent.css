@@ -1,0 +1,31 @@
+.player-component.player-top
+  .player-avatar-component.player-avatar
+  > img:first-child {
+  display: none;
+}
+
+.player-component.player-top
+  .player-tagline
+  .cc-user-block-component
+  > :not(.connection-component) {
+  display: none;
+}
+
+/* focus mode */
+.player-component.player-top.player-theatre
+  .user-tagline-compact-theatre
+  .user-tagline-compact-row
+  > :not(.connection-component) {
+  display: none;
+}
+
+/* focus mode player title */
+.player-component.player-top.player-theatre
+  .player-avatar
+  .user-chess-title-component {
+  display: none;
+}
+
+.chat-room-chat > * {
+  display: none;
+}
