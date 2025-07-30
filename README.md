@@ -2,7 +2,7 @@
 
 Chess.com Tweaks is a Firefox extension that helps you customize your Chess.com experience. It lets you hide all player ratings in games and stats, hide opponent details during live games, and hide all flags next to usernames, including your own on the homepage.
 
-[<img src="https://extensionworkshop.com/assets/img/documentation/publish/get-the-addon-178x60px.dad84b42.png" alt="">](https://addons.mozilla.org/en-US/firefox/addon/hide-chesscom-ratings/)
+[<img src="https://extensionworkshop.com/assets/img/documentation/publish/get-the-addon-178x60px.dad84b42.png" alt="">](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
 
 ## Features
 
