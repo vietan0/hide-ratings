@@ -7,8 +7,8 @@ async function initiateStorage() {
   if (Object.entries(storage).length === 0) {
     const initialValues = {};
 
-    for (const feature of features) {
-      initialValues[feature] = false;
+    for (const { id } of features) {
+      initialValues[id] = false;
     }
 
     await browser.storage.local.set(initialValues);
