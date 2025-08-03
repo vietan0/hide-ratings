@@ -14,6 +14,10 @@ const features = [{
   id: 'hideOwnFlagOnHome',
   title: 'Hide Your Flag on Home',
   description: 'Hide the flag next to your username on the homepage',
+}, {
+  id: 'analyzeOnLichess',
+  title: 'Analyze on Lichess',
+  description: 'Add buttons that send the game to the Lichess analysis page',
 }];
 
 export default features;

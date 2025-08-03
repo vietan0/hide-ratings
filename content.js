@@ -1,5 +1,6 @@
 import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
 import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
+import { addBtnToPlaces, analyzeOnLichessClass, removeAllBtns } from './analyzeOnLichess';
 
 let port;
 
@@ -17,7 +18,7 @@ function usernameFail() {
 
 function isGameOver() {
   const gameOverModal = document.querySelector('.board-modal-container-container');
-  const gameReviewBtn = document.querySelector('.game-review-buttons-component');
+  const gameReviewBtn = document.querySelector(`.game-review-buttons-component:not(.${analyzeOnLichessClass})`);
   const newGameBtns = document.querySelector('.new-game-buttons-component');
   const nextGameBtn = document.querySelector('.arena-footer-component > .cc-button-component');
 
@@ -44,7 +45,7 @@ async function checkHideOpponentConds() {
   // 1. url condition
   // 2. username-related conditions
   // 3. game over-related conditions
-  if (!window.location.href.match(/chess.com\/game\/(live\/)?\d+$/))
+  if (!window.location.href.match(/chess.com\/game\/(?:live\/)?\d+$/))
     return { cond: false, reason: 'url-not-match' };
 
   return usernameFail() || isGameOver() || { cond: true };
@@ -86,7 +87,7 @@ async function hideOrUnhide() {
 
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
-  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome } = await browser.storage.local.get();
+  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess } = await browser.storage.local.get();
 
   // 1. page loads, check storage to see what to execute
   if (hideRatings) {
@@ -136,6 +137,24 @@ async function connectToBackground() {
     port.postMessage({ command: 'hideOwnFlagOnHome' });
   }
 
+  if (analyzeOnLichess) {
+    const gameLinkRegex = /chess.com\/game\/(?:live)?\/?\d+/;
+    const newGameRegex = /chess.com\/play\/online\/new/;
+    // maybe in the future: analysis page
+
+    if (window.location.href.match(gameLinkRegex)
+      || window.location.href.match(newGameRegex)) {
+      isGameOver() ? addBtnToPlaces(port) : removeAllBtns();
+
+      const bodyObserver = new MutationObserver(async () => {
+        const { analyzeOnLichess } = await browser.storage.local.get();
+        (analyzeOnLichess && isGameOver()) ? addBtnToPlaces(port) : removeAllBtns();
+      });
+
+      bodyObserver.observe(document.body, { subtree: true, childList: true });
+    }
+  }
+
   // 2. add listeners
   port.onMessage.addListener(async (message) => {
     console.log('CS received message:', message);
@@ -167,5 +186,9 @@ browser.storage.local.onChanged.addListener(async (changes) => {
     else {
       stopHideOpponent();
     }
+  }
+
+  if (changedFeature === 'analyzeOnLichess') {
+    (newValue && isGameOver()) ? addBtnToPlaces(port) : removeAllBtns();
   }
 });

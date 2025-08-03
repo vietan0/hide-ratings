@@ -30,6 +30,11 @@
       "matches": ["*://www.chess.com/*"],
       "js": ["dist/content.js"],
       "run_at": "document_end"
+    },
+    {
+      "matches": ["*://lichess.org/paste"],
+      "js": ["dist/lichessContent.js"],
+      "run_at": "document_end"
     }
   ],
   "browser_specific_settings": {

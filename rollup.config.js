@@ -17,4 +17,10 @@ export default [
       file: 'dist/popup.js',
     },
   },
+  {
+    input: 'lichessContent.js',
+    output: {
+      file: 'dist/lichessContent.js',
+    },
+  },
 ];
