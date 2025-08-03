@@ -24,7 +24,9 @@ initiateStorage();
  * @returns {{ files: string[], target: { tabId: number }}} A `details` object to pass as argument into `insertCSS()` or `removeCSS()`
  */
 function getCSSDetails(filename, tabId) {
-  return { files: [`${filename}.css`], target: { tabId } };
+  console.log(`src/css/${filename}.css`);
+
+  return { files: [`src/css/${filename}.css`], target: { tabId } };
 }
 
 let port;
@@ -39,7 +41,10 @@ browser.runtime.onConnect.addListener((p) => {
 
     switch (message.command) {
       case 'hideRatings':
-        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideRatings', id))));
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideRatings', id)))).catch((error) => {
+          console.log(error);
+        });
+
         break;
       case 'hideOpponent':
         Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideOpponent', id))));
