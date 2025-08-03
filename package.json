@@ -3,7 +3,7 @@
   "version": "1.4.0",
   "scripts": {
     "build": "web-ext build",
-    "dev": "web-ext run --devtools --start-url www.chess.com",
+    "dev": "web-ext run --devtools --start-url www.chess.com --start-url addons.mozilla.org/en-US/firefox/addon/ublock-origin",
     "lint": "eslint .",
     "rollup-build": "rollup --config",
     "rollup-watch": "rollup --config -w",
