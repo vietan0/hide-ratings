@@ -18,11 +18,18 @@ function usernameFail() {
 
 function isGameOver() {
   const gameOverModal = document.querySelector('.board-modal-container-container');
+
+  if (gameOverModal) {
+    const headerTitle = gameOverModal.querySelector('.header-title-component');
+
+    return { cond: false, reason: headerTitle.textContent === 'Game Aborted' ? 'game-aborted' : 'gameover' };
+  }
+
   const gameReviewBtn = document.querySelector(`.game-review-buttons-component:not(.${analyzeOnLichessClass})`);
   const newGameBtns = document.querySelector('.new-game-buttons-component');
   const nextGameBtn = document.querySelector('.arena-footer-component > .cc-button-component');
 
-  if (gameOverModal || gameReviewBtn || newGameBtns || nextGameBtn) {
+  if (gameReviewBtn || newGameBtns || nextGameBtn) {
     return { cond: false, reason: 'gameover' };
   }
 }
@@ -144,11 +151,13 @@ async function connectToBackground() {
 
     if (window.location.href.match(gameLinkRegex)
       || window.location.href.match(newGameRegex)) {
-      isGameOver() ? addBtnToPlaces(port) : removeAllBtns();
+      const gameOver = isGameOver();
+      (gameOver && gameOver.reason !== 'game-aborted') ? addBtnToPlaces(port) : removeAllBtns();
 
       const bodyObserver = new MutationObserver(async () => {
         const { analyzeOnLichess } = await browser.storage.local.get();
-        (analyzeOnLichess && isGameOver()) ? addBtnToPlaces(port) : removeAllBtns();
+        const gameOver = isGameOver();
+        (analyzeOnLichess && gameOver && gameOver.reason !== 'game-aborted') ? addBtnToPlaces(port) : removeAllBtns();
       });
 
       bodyObserver.observe(document.body, { subtree: true, childList: true });
