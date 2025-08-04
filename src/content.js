@@ -9,7 +9,7 @@ function usernameFail() {
   const currentUsername = document.getElementById('notifications-request').getAttribute('username');
   const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
   const usernamesInPage = usernameDivs.map(x => x.textContent.toLowerCase());
-  const bothUsernamesLoaded = !usernamesInPage.includes('Opponent');
+  const bothUsernamesLoaded = !usernamesInPage.includes('opponent');
   const currentUserPlaying = usernamesInPage.includes(currentUsername.toLowerCase());
 
   if (!bothUsernamesLoaded || !currentUserPlaying) {
@@ -90,37 +90,38 @@ async function connectToBackground() {
 
   if (hideOpponent) {
     const topPlayerComp = document.querySelector('.player-component.player-top');
-    if (!topPlayerComp)
-      return;
-    hideOrUnhide();
 
-    const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
-      const topUserBlock = topPlayerComp.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
-      if (!topUserBlock)
-        return;
+    if (topPlayerComp) {
+      hideOrUnhide();
 
-      const focusModeWasToggled = mutationList.some(m =>
-        m.type === 'attributes'
-        && m.attributeName === 'class'
-        && m.oldValue.includes('player-component player-top'),
-      );
+      const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
+        const topUserBlock = topPlayerComp.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
+        if (!topUserBlock)
+          return;
 
-      if (focusModeWasToggled) {
-        hideOrUnhide();
-      }
+        const focusModeWasToggled = mutationList.some(m =>
+          m.type === 'attributes'
+          && m.attributeName === 'class'
+          && m.oldValue.includes('player-component player-top'),
+        );
 
-      else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
-        hideOrUnhide();
-      }
-    });
+        if (focusModeWasToggled) {
+          hideOrUnhide();
+        }
 
-    topPlayerCompObserver.observe(topPlayerComp, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ['class'],
-      attributeOldValue: true,
-    });
+        else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
+          hideOrUnhide();
+        }
+      });
+
+      topPlayerCompObserver.observe(topPlayerComp, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class'],
+        attributeOldValue: true,
+      });
+    }
   }
 
   if (hideFlags) {
@@ -173,9 +174,10 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   if (changedFeature === 'analyzeOnLichess') {
     if (newValue) {
       if (window.location.href.match(analyzeOnLichessRegex)) {
+        boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
+
         if (isGameOver()) {
           addBtnToPlaces(port);
-          boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
         }
       }
     }
