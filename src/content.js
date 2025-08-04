@@ -1,6 +1,7 @@
 import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
 import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
-import { addBtnToPlaces, analyzeOnLichessClass, removeAllBtns } from './analyzeOnLichess';
+import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
+import isGameOver from './isGameOver';
 
 let port;
 
@@ -13,24 +14,6 @@ function usernameFail() {
 
   if (!bothUsernamesLoaded || !currentUserPlaying) {
     return { cond: false, reason: 'username' };
-  }
-}
-
-function isGameOver() {
-  const gameOverModal = document.querySelector('.board-modal-container-container');
-
-  if (gameOverModal) {
-    const headerTitle = gameOverModal.querySelector('.header-title-component');
-
-    return { cond: false, reason: headerTitle.textContent === 'Game Aborted' ? 'game-aborted' : 'gameover' };
-  }
-
-  const gameReviewBtn = document.querySelector(`.game-review-buttons-component:not(.${analyzeOnLichessClass})`);
-  const newGameBtns = document.querySelector('.new-game-buttons-component');
-  const nextGameBtn = document.querySelector('.arena-footer-component > .cc-button-component');
-
-  if (gameReviewBtn || newGameBtns || nextGameBtn) {
-    return { cond: false, reason: 'gameover' };
   }
 }
 
@@ -92,6 +75,10 @@ async function hideOrUnhide() {
   }
 }
 
+const boardObserver = new MutationObserver(() => {
+  isGameOver() ? addBtnToPlaces(port) : removeAllBtns();
+});
+
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
   const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess } = await browser.storage.local.get();
@@ -145,22 +132,8 @@ async function connectToBackground() {
   }
 
   if (analyzeOnLichess) {
-    const gameLinkRegex = /chess.com\/game\/(?:live)?\/?\d+/;
-    const newGameRegex = /chess.com\/play\/online\/new/;
-    // maybe in the future: analysis page
-
-    if (window.location.href.match(gameLinkRegex)
-      || window.location.href.match(newGameRegex)) {
-      const gameOver = isGameOver();
-      (gameOver && gameOver.reason !== 'game-aborted') ? addBtnToPlaces(port) : removeAllBtns();
-
-      const bodyObserver = new MutationObserver(async () => {
-        const { analyzeOnLichess } = await browser.storage.local.get();
-        const gameOver = isGameOver();
-        (analyzeOnLichess && gameOver && gameOver.reason !== 'game-aborted') ? addBtnToPlaces(port) : removeAllBtns();
-      });
-
-      bodyObserver.observe(document.body, { subtree: true, childList: true });
+    if (window.location.href.match(analyzeOnLichessRegex)) {
+      boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
     }
   }
 
@@ -198,6 +171,17 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   }
 
   if (changedFeature === 'analyzeOnLichess') {
-    (newValue && isGameOver()) ? addBtnToPlaces(port) : removeAllBtns();
+    if (newValue) {
+      if (window.location.href.match(analyzeOnLichessRegex)) {
+        if (isGameOver()) {
+          addBtnToPlaces(port);
+          boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
+        }
+      }
+    }
+    else {
+      removeAllBtns();
+      boardObserver.disconnect();
+    }
   }
 });

@@ -153,3 +153,6 @@ export function removeAllBtns() {
     btn.remove();
   }
 }
+
+// details: https://regexr.com/8gbu9
+export const analyzeOnLichessRegex = /chess.com\/((game\/(?:live)?\/?\d+)|(play\/online\/new))/;
