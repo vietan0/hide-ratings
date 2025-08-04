@@ -17,7 +17,7 @@ export function createAnalyzeOnLichessBtn(port, variant = 'default') {
       minimizeBtn.click();
     }
 
-    const shareBtn = document.querySelector('.icon-font-chess.share.live-game-buttons-button');
+    const shareBtn = document.querySelector('.live-game-buttons-component > [aria-label="Share"],.game-icons-container-component > [aria-label="Share"]');
     shareBtn.click();
 
     const startTrying = Date.now();
@@ -80,6 +80,8 @@ export function createAnalyzeOnLichessBtn(port, variant = 'default') {
 
     if (variant === 'default') {
       btn.className = 'game-review-buttons-component';
+      btn.style = 'margin-bottom: 0.5rem;';
+
       anchor.className = 'cc-button-component cc-button-primary cc-button-xx-large cc-bg-primary cc-button-full';
 
       anchor.style = `
@@ -125,7 +127,7 @@ export function addBtnToPlaces(port) {
   const gameOverModalBtns = document.querySelector('.game-over-modal-buttons');
   const gameReviewEmphasisContent = document.querySelector('.game-review-emphasis-content');
   const focusModeSidebarBottom = document.querySelector('.focus-mode-sidebar-bottom');
-  const liveGameAnalysisBtn = document.querySelector('.live-game-buttons-button.icon-font-chess.chess-board-search');
+  const liveGameAnalysisBtn = document.querySelector('.live-game-buttons-component > [aria-label="Self Analysis"],.game-icons-container-component > [aria-label="Self Analysis"]');
 
   if (gameOverModalBtns && !gameOverModalBtns.querySelector(`.${analyzeOnLichessClass}`)) {
     gameOverModalBtns.prepend(createAnalyzeOnLichessBtn(port, 'small'));
