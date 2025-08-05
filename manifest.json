@@ -1,11 +1,11 @@
 {
   "manifest_version": 2,
   "name": "Chess.com Tweaks",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "homepage_url": "https://github.com/vietan0/hide-ratings",
-  "description": "Chess.com Tweaks is a Firefox extension that helps you customize your Chess.com experience. It lets you hide all player ratings in games and stats, hide opponent details during live games, and hide all flags next to usernames, including your own on the homepage.",
+  "description": "Chess.com Tweaks is a Firefox extension that helps you customize your Chess.com experience by letting you hide distracting elements like player ratings, country flags, and even your opponent's details during a game. It also adds convenient Lichess analysis buttons for your finished games.",
   "icons": {
-    "48": "icons/chesslogo.png"
+    "48": "src/icons/chesslogo.png"
   },
   "permissions": [
     "scripting",
@@ -21,14 +21,19 @@
     ]
   },
   "browser_action": {
-    "default_icon": "icons/chesslogo.png",
+    "default_icon": "src/icons/chesslogo.png",
     "default_title": "Chess.com Tweaks",
-    "default_popup": "/popup/index.html"
+    "default_popup": "src/popup/index.html"
   },
   "content_scripts": [
     {
       "matches": ["*://www.chess.com/*"],
       "js": ["dist/content.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["*://lichess.org/paste"],
+      "js": ["dist/lichessContent.js"],
       "run_at": "document_end"
     }
   ],

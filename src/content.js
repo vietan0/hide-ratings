@@ -1,5 +1,7 @@
 import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
 import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
+import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
+import isGameOver from './isGameOver';
 
 let port;
 
@@ -7,22 +9,11 @@ function usernameFail() {
   const currentUsername = document.getElementById('notifications-request').getAttribute('username');
   const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
   const usernamesInPage = usernameDivs.map(x => x.textContent.toLowerCase());
-  const bothUsernamesLoaded = !usernamesInPage.includes('Opponent');
+  const bothUsernamesLoaded = !usernamesInPage.includes('opponent');
   const currentUserPlaying = usernamesInPage.includes(currentUsername.toLowerCase());
 
   if (!bothUsernamesLoaded || !currentUserPlaying) {
     return { cond: false, reason: 'username' };
-  }
-}
-
-function isGameOver() {
-  const gameOverModal = document.querySelector('.board-modal-container-container');
-  const gameReviewBtn = document.querySelector('.game-review-buttons-component');
-  const newGameBtns = document.querySelector('.new-game-buttons-component');
-  const nextGameBtn = document.querySelector('.arena-footer-component > .cc-button-component');
-
-  if (gameOverModal || gameReviewBtn || newGameBtns || nextGameBtn) {
-    return { cond: false, reason: 'gameover' };
   }
 }
 
@@ -32,6 +23,9 @@ function hideOpponentInEffect() {
 
   return Boolean(placeholderImg || placeholderUsernameDiv);
 }
+
+// details: https://regexr.com/8gcck
+const hideOpponentRegex = /chess.com\/(?:game\/(?:live|daily\/)?\d+$|play\/online\/new)/;
 
 /**
  * - This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
@@ -44,7 +38,7 @@ async function checkHideOpponentConds() {
   // 1. url condition
   // 2. username-related conditions
   // 3. game over-related conditions
-  if (!window.location.href.match(/chess.com\/game\/(live\/)?\d+$/))
+  if (!window.location.href.match(hideOpponentRegex))
     return { cond: false, reason: 'url-not-match' };
 
   return usernameFail() || isGameOver() || { cond: true };
@@ -84,9 +78,33 @@ async function hideOrUnhide() {
   }
 }
 
+const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
+  const topUserBlock = document.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
+  if (!topUserBlock)
+    return;
+
+  const focusModeWasToggled = mutationList.some(m =>
+    m.type === 'attributes'
+    && m.attributeName === 'class'
+    && m.oldValue.includes('player-component player-top'),
+  );
+
+  if (focusModeWasToggled) {
+    hideOrUnhide();
+  }
+
+  else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
+    hideOrUnhide();
+  }
+});
+
+const boardObserver = new MutationObserver(() => {
+  isGameOver() ? addBtnToPlaces(port) : removeAllBtns();
+});
+
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
-  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome } = await browser.storage.local.get();
+  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess } = await browser.storage.local.get();
 
   // 1. page loads, check storage to see what to execute
   if (hideRatings) {
@@ -95,37 +113,18 @@ async function connectToBackground() {
 
   if (hideOpponent) {
     const topPlayerComp = document.querySelector('.player-component.player-top');
-    if (!topPlayerComp)
-      return;
-    hideOrUnhide();
 
-    const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
-      const topUserBlock = topPlayerComp.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
-      if (!topUserBlock)
-        return;
+    if (topPlayerComp) {
+      hideOrUnhide();
 
-      const focusModeWasToggled = mutationList.some(m =>
-        m.type === 'attributes'
-        && m.attributeName === 'class'
-        && m.oldValue.includes('player-component player-top'),
-      );
-
-      if (focusModeWasToggled) {
-        hideOrUnhide();
-      }
-
-      else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
-        hideOrUnhide();
-      }
-    });
-
-    topPlayerCompObserver.observe(topPlayerComp, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ['class'],
-      attributeOldValue: true,
-    });
+      topPlayerCompObserver.observe(topPlayerComp, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ['class'],
+        attributeOldValue: true,
+      });
+    }
   }
 
   if (hideFlags) {
@@ -134,6 +133,13 @@ async function connectToBackground() {
 
   if (hideOwnFlagOnHome) {
     port.postMessage({ command: 'hideOwnFlagOnHome' });
+  }
+
+  if (analyzeOnLichess) {
+    if (window.location.href.match(analyzeOnLichessRegex)) {
+      boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
+      boardObserver.observe(document.getElementById('board-layout-sidebar'), { subtree: true, childList: true });
+    }
   }
 
   // 2. add listeners
@@ -158,14 +164,46 @@ browser.storage.local.onChanged.addListener(async (changes) => {
 
   if (changedFeature === 'hideOpponent') {
     if (newValue) {
-      const result = await checkHideOpponentConds();
+      if (window.location.href.match(hideOpponentRegex)) {
+        const topPlayerComp = document.querySelector('.player-component.player-top');
 
-      if (result.cond) {
-        startHideOpponent();
+        if (topPlayerComp) {
+          topPlayerCompObserver.observe(topPlayerComp, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['class'],
+            attributeOldValue: true,
+          });
+
+          const result = await checkHideOpponentConds();
+
+          if (result.cond) {
+            startHideOpponent();
+          }
+        }
       }
     }
     else {
       stopHideOpponent();
+      topPlayerCompObserver.disconnect();
+    }
+  }
+
+  if (changedFeature === 'analyzeOnLichess') {
+    if (newValue) {
+      if (window.location.href.match(analyzeOnLichessRegex)) {
+        boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
+        boardObserver.observe(document.getElementById('board-layout-sidebar'), { subtree: true, childList: true });
+
+        if (isGameOver()) {
+          addBtnToPlaces(port);
+        }
+      }
+    }
+    else {
+      removeAllBtns();
+      boardObserver.disconnect();
     }
   }
 });

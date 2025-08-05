@@ -24,10 +24,13 @@ initiateStorage();
  * @returns {{ files: string[], target: { tabId: number }}} A `details` object to pass as argument into `insertCSS()` or `removeCSS()`
  */
 function getCSSDetails(filename, tabId) {
-  return { files: [`${filename}.css`], target: { tabId } };
+  console.log(`src/css/${filename}.css`);
+
+  return { files: [`src/css/${filename}.css`], target: { tabId } };
 }
 
 let port;
+let pgn;
 
 browser.runtime.onConnect.addListener((p) => {
   port = p;
@@ -38,7 +41,10 @@ browser.runtime.onConnect.addListener((p) => {
 
     switch (message.command) {
       case 'hideRatings':
-        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideRatings', id))));
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideRatings', id)))).catch((error) => {
+          console.log(error);
+        });
+
         break;
       case 'hideOpponent':
         Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideOpponent', id))));
@@ -52,6 +58,19 @@ browser.runtime.onConnect.addListener((p) => {
       case 'hideOwnFlagOnHome':
         Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideOwnFlagOnHome', id))));
         break;
+
+      case 'openLichessTab': {
+        pgn = message.pgn;
+        browser.tabs.create({ url: 'https://lichess.org/paste' });
+        break;
+      }
+
+      case 'requestPgn': {
+        port.postMessage({ pgn });
+        pgn = undefined;
+        break;
+      }
+
       default:
         throw new Error(`Unhandled message.command: ${message.command}`);
     }
@@ -67,7 +86,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   const [changedFeature] = Object.keys(changes); // I can do this because I only change one item at a time
   const newValue = changes[changedFeature].newValue;
 
-  if (changedFeature !== 'hideOpponent') {
+  if (changedFeature !== 'hideOpponent' && changedFeature !== 'analyzeOnLichess') {
     // changes to hideOpponent are handled by content script
     const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 

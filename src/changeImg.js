@@ -14,7 +14,7 @@ export function overrideImg() {
   const imgContainer = document.querySelector('.player-component.player-top .player-avatar-component.player-avatar');
   const placeholderImg = document.createElement('img');
   placeholderImg.id = placeholderImgId;
-  placeholderImg.src = browser.runtime.getURL(`images/${getTopPlayerColor()}.png`);
+  placeholderImg.src = browser.runtime.getURL(`src/images/${getTopPlayerColor()}.png`);
   imgContainer.append(placeholderImg);
 }
 

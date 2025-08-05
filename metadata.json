@@ -9,10 +9,7 @@
     "firefox": ["appearance", "games-entertainment"]
   },
   "description": {
-    "en-US": "Hide Chess.com and Wintrcat's Game Review ratings to help you focus on playing at your best - without distraction."
-  },
-  "developer_comments": {
-    "en-US": "This extension hide your ratings on chess.com and chess.wintrcat.uk (a free game review site)."
+    "en-US": "Customize your Chess.com experience by letting you hide distracting elements like player ratings, country flags, and even your opponent's details during a game. It also adds convenient Lichess analysis buttons for your finished games."
   },
   "requires_payment": false,
   "support_email": {
