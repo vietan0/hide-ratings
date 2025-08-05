@@ -17,7 +17,7 @@ const features = [{
 }, {
   id: 'analyzeOnLichess',
   title: 'Analyze on Lichess',
-  description: 'Add buttons that send the game to the Lichess analysis page',
+  description: 'Add buttons that send your finished games to the Lichess analysis page',
 }];
 
 export default features;
