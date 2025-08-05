@@ -24,6 +24,9 @@ function hideOpponentInEffect() {
   return Boolean(placeholderImg || placeholderUsernameDiv);
 }
 
+// details: https://regexr.com/8gcck
+const hideOpponentRegex = /chess.com\/(?:game\/(?:live|daily\/)?\d+$|play\/online\/new)/;
+
 /**
  * - This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
  * - This function doesn't check if hideOpponent code is already in effect (avatar & username replaced)
@@ -35,7 +38,7 @@ async function checkHideOpponentConds() {
   // 1. url condition
   // 2. username-related conditions
   // 3. game over-related conditions
-  if (!window.location.href.match(/chess.com\/game\/(?:live\/)?\d+$/))
+  if (!window.location.href.match(hideOpponentRegex))
     return { cond: false, reason: 'url-not-match' };
 
   return usernameFail() || isGameOver() || { cond: true };
@@ -75,6 +78,26 @@ async function hideOrUnhide() {
   }
 }
 
+const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
+  const topUserBlock = document.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
+  if (!topUserBlock)
+    return;
+
+  const focusModeWasToggled = mutationList.some(m =>
+    m.type === 'attributes'
+    && m.attributeName === 'class'
+    && m.oldValue.includes('player-component player-top'),
+  );
+
+  if (focusModeWasToggled) {
+    hideOrUnhide();
+  }
+
+  else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
+    hideOrUnhide();
+  }
+});
+
 const boardObserver = new MutationObserver(() => {
   isGameOver() ? addBtnToPlaces(port) : removeAllBtns();
 });
@@ -93,26 +116,6 @@ async function connectToBackground() {
 
     if (topPlayerComp) {
       hideOrUnhide();
-
-      const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
-        const topUserBlock = topPlayerComp.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
-        if (!topUserBlock)
-          return;
-
-        const focusModeWasToggled = mutationList.some(m =>
-          m.type === 'attributes'
-          && m.attributeName === 'class'
-          && m.oldValue.includes('player-component player-top'),
-        );
-
-        if (focusModeWasToggled) {
-          hideOrUnhide();
-        }
-
-        else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
-          hideOrUnhide();
-        }
-      });
 
       topPlayerCompObserver.observe(topPlayerComp, {
         subtree: true,
@@ -135,6 +138,7 @@ async function connectToBackground() {
   if (analyzeOnLichess) {
     if (window.location.href.match(analyzeOnLichessRegex)) {
       boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
+      boardObserver.observe(document.getElementById('board-layout-sidebar'), { subtree: true, childList: true });
     }
   }
 
@@ -160,14 +164,29 @@ browser.storage.local.onChanged.addListener(async (changes) => {
 
   if (changedFeature === 'hideOpponent') {
     if (newValue) {
-      const result = await checkHideOpponentConds();
+      if (window.location.href.match(hideOpponentRegex)) {
+        const topPlayerComp = document.querySelector('.player-component.player-top');
 
-      if (result.cond) {
-        startHideOpponent();
+        if (topPlayerComp) {
+          topPlayerCompObserver.observe(topPlayerComp, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['class'],
+            attributeOldValue: true,
+          });
+
+          const result = await checkHideOpponentConds();
+
+          if (result.cond) {
+            startHideOpponent();
+          }
+        }
       }
     }
     else {
       stopHideOpponent();
+      topPlayerCompObserver.disconnect();
     }
   }
 
@@ -175,6 +194,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
     if (newValue) {
       if (window.location.href.match(analyzeOnLichessRegex)) {
         boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
+        boardObserver.observe(document.getElementById('board-layout-sidebar'), { subtree: true, childList: true });
 
         if (isGameOver()) {
           addBtnToPlaces(port);

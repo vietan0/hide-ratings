@@ -125,7 +125,7 @@ export function createAnalyzeOnLichessBtn(port, variant = 'default') {
 
 export function addBtnToPlaces(port) {
   const gameOverModalBtns = document.querySelector('.game-over-modal-buttons');
-  const gameReviewEmphasisContent = document.querySelector('.game-review-emphasis-content');
+  const gameReviewBtnSidebar = document.querySelector('.sidebar-component .game-review-buttons-component');
   const focusModeSidebarBottom = document.querySelector('.focus-mode-sidebar-bottom');
   const liveGameAnalysisBtn = document.querySelector('.live-game-buttons-component > [aria-label="Self Analysis"],.game-icons-container-component > [aria-label="Self Analysis"]');
 
@@ -133,8 +133,8 @@ export function addBtnToPlaces(port) {
     gameOverModalBtns.prepend(createAnalyzeOnLichessBtn(port, 'small'));
   }
 
-  if (gameReviewEmphasisContent && !gameReviewEmphasisContent.querySelector(`.${analyzeOnLichessClass}`)) {
-    gameReviewEmphasisContent.prepend(createAnalyzeOnLichessBtn(port));
+  if (gameReviewBtnSidebar && !gameReviewBtnSidebar.parentElement.querySelector(`.${analyzeOnLichessClass}`)) {
+    gameReviewBtnSidebar.insertAdjacentElement('beforebegin', createAnalyzeOnLichessBtn(port));
   }
 
   if (focusModeSidebarBottom && !focusModeSidebarBottom.querySelector(`.${analyzeOnLichessClass}`)) {
@@ -155,4 +155,4 @@ export function removeAllBtns() {
 }
 
 // details: https://regexr.com/8gbu9
-export const analyzeOnLichessRegex = /chess.com\/(?:game\/(?:live)?\/?\d+|play\/online)/;
+export const analyzeOnLichessRegex = /chess.com\/(?:game\/(?:live|daily)?\/?\d+|play\/online)/;
