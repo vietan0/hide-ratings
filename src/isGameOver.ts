@@ -7,6 +7,6 @@ export default function isGameOver() {
   const nextGameBtn = document.querySelector('.arena-footer-component > .cc-button-component');
 
   if (gameOverModal || gameReviewBtn || newGameBtns || nextGameBtn) {
-    return { cond: false, reason: 'gameover' };
+    return { cond: false, reason: 'gameover' } as const;
   }
 }

@@ -4,7 +4,7 @@ export function overrideUsername() {
   if (document.getElementById(placeholderUsername))
     return;
 
-  const topUserBlock = document.querySelector('.player-component.player-top .cc-user-block-component, .player-component.player-top .user-tagline-compact-theatre');
+  const topUserBlock = document.querySelector('.player-component.player-top .cc-user-block-component, .player-component.player-top .user-tagline-compact-theatre')!;
   const placeholderUsernameDiv = document.createElement('div');
   placeholderUsernameDiv.id = placeholderUsername;
   placeholderUsernameDiv.className = 'cc-text-medium-bold cc-user-username-component cc-user-username-white';

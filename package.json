@@ -7,16 +7,22 @@
     "lint": "eslint .",
     "rollup-build": "rollup --config",
     "rollup-watch": "rollup --config -w",
-    "sign": "node sign.js"
+    "sign": "node dist/sign.js"
   },
   "dependencies": {
     "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.22.0",
+    "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.4",
+    "@types/firefox-webext-browser": "^120.0.4",
     "eslint": "^9.6.0",
     "eslint-plugin-format": "^0.1.2",
     "rollup": "^4.45.0",
+    "typescript": "^5.9.2",
     "web-ext": "^8.2.0"
   },
   "pnpm": {

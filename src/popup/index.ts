@@ -1,16 +1,17 @@
 import features from '../features';
 
-async function renderSwitch(feature, btn) {
-  const storage = await browser.storage.local.get(feature);
+async function renderSwitch(featureId: string, btn: HTMLButtonElement) {
+  const storage = await browser.storage.local.get(featureId);
   const switchIcon = document.createElement('img');
   switchIcon.className = 'max-w-7';
-  switchIcon.id = `switch-${feature}`;
-  switchIcon.src = storage[feature] ? './LineMdSwitchOffTwotoneToSwitchTwotoneTransition.svg' : './LineMdSwitchTwotoneToSwitchOffTwotoneTransition.svg';
+  switchIcon.id = `switch-${featureId}`;
+  switchIcon.src = storage[featureId] ? './LineMdSwitchOffTwotoneToSwitchTwotoneTransition.svg' : './LineMdSwitchTwotoneToSwitchOffTwotoneTransition.svg';
   btn.append(switchIcon);
 }
 
-async function handleClick(e) {
-  const featureId = e.currentTarget.id;
+async function handleClick(e: MouseEvent) {
+  const featureBtn = e.currentTarget as HTMLButtonElement;
+  const featureId = featureBtn.id;
   const storage = await browser.storage.local.get(featureId);
 
   await browser.storage.local.set({
@@ -44,13 +45,13 @@ async function renderBtns() {
     btn.onclick = handleClick;
 
     div.append(btn);
-    document.getElementById('container').append(div);
+    document.getElementById('container')!.append(div);
   }
 }
 
-function updateSwitchIcon(changedFeature) {
-  const btn = document.getElementById(changedFeature);
-  const oldSwitchIcon = document.getElementById(`switch-${changedFeature}`);
+function updateSwitchIcon(changedFeature: string) {
+  const btn = document.getElementById(changedFeature) as HTMLButtonElement;
+  const oldSwitchIcon = document.getElementById(`switch-${changedFeature}`)!;
   renderSwitch(changedFeature, btn);
   oldSwitchIcon.remove();
 }
@@ -58,7 +59,6 @@ function updateSwitchIcon(changedFeature) {
 renderBtns();
 
 browser.storage.local.onChanged.addListener((changes) => {
-  const [changedFeature] = Object.keys(changes);
-
-  updateSwitchIcon(changedFeature);
+  const [changedFeature] = Object.entries(changes)[0]!;
+  updateSwitchIcon(changedFeature!);
 });

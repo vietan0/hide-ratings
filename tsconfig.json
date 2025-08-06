@@ -1,0 +1,13 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "moduleResolution": "bundler",
+    "types": ["firefox-webext-browser"],
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
+    "sourceMap": true,
+    "noUncheckedSideEffectImports": true,
+    "skipLibCheck": true
+  }
+}

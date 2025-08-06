@@ -5,7 +5,7 @@ async function initiateStorage() {
   const storage = await browser.storage.local.get();
 
   if (Object.entries(storage).length === 0) {
-    const initialValues = {};
+    const initialValues: Record<string, boolean> = {};
 
     for (const { id } of features) {
       initialValues[id] = false;
@@ -18,19 +18,17 @@ async function initiateStorage() {
 initiateStorage();
 
 /**
- *
- * @param {string} filename Name of the CSS file, no extension included.
- * @param {number} tabId
- * @returns {{ files: string[], target: { tabId: number }}} A `details` object to pass as argument into `insertCSS()` or `removeCSS()`
+ * @returns A `details` object to pass as argument into `insertCSS()` or `removeCSS()`
  */
-function getCSSDetails(filename, tabId) {
-  console.log(`src/css/${filename}.css`);
+function getCSSDetails(filename: string, tabId: number | undefined) {
+  if (tabId === undefined)
+    throw new Error(`tabId is undefined`);
 
   return { files: [`src/css/${filename}.css`], target: { tabId } };
 }
 
-let port;
-let pgn;
+let port: browser.runtime.Port;
+let pgn: string | undefined;
 
 browser.runtime.onConnect.addListener((p) => {
   port = p;
@@ -38,13 +36,11 @@ browser.runtime.onConnect.addListener((p) => {
 
   port.onMessage.addListener(async (message) => {
     const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+    const msgTyped = message as { command: string; pgn?: string };
 
-    switch (message.command) {
+    switch (msgTyped.command) {
       case 'hideRatings':
-        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideRatings', id)))).catch((error) => {
-          console.log(error);
-        });
-
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideRatings', id))));
         break;
       case 'hideOpponent':
         Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('hideOpponent', id))));
@@ -60,7 +56,7 @@ browser.runtime.onConnect.addListener((p) => {
         break;
 
       case 'openLichessTab': {
-        pgn = message.pgn;
+        pgn = msgTyped.pgn;
         browser.tabs.create({ url: 'https://lichess.org/paste' });
         break;
       }
@@ -72,7 +68,7 @@ browser.runtime.onConnect.addListener((p) => {
       }
 
       default:
-        throw new Error(`Unhandled message.command: ${message.command}`);
+        throw new Error(`Unhandled message.command: ${msgTyped.command}`);
     }
   });
 
@@ -83,8 +79,7 @@ browser.runtime.onConnect.addListener((p) => {
 });
 
 browser.storage.local.onChanged.addListener(async (changes) => {
-  const [changedFeature] = Object.keys(changes); // I can do this because I only change one item at a time
-  const newValue = changes[changedFeature].newValue;
+  const [changedFeature, { newValue }] = Object.entries(changes)[0]!;
 
   if (changedFeature !== 'hideOpponent' && changedFeature !== 'analyzeOnLichess') {
     // changes to hideOpponent are handled by content script

@@ -1,23 +1,22 @@
 export const analyzeOnLichessClass = 'analyzeOnLichess';
 
 /**
- * @param {runtime.Port} port to send messages to the background script
- * @param {'default' | 'small' | 'icon'} variant
  * @returns A button that sends the game to Lichess analysis page
  */
-export function createAnalyzeOnLichessBtn(port, variant = 'default') {
-  let btn;
+export function createAnalyzeOnLichessBtn(port: browser.runtime.Port, variant: 'default' | 'small' | 'icon' = 'default') {
+  let btn: HTMLDivElement | HTMLButtonElement;
 
   function handleClick() {
     const focusMode = document.body.classList.contains('theatre-mode');
 
     if (focusMode) {
       // get out of focus mode
-      const minimizeBtn = document.querySelector('.board-layout-icon.icon-font-chess.minimize');
+      const minimizeBtn = document.querySelector<HTMLButtonElement>('.board-layout-icon.icon-font-chess.minimize')!;
       minimizeBtn.click();
     }
 
-    const shareBtn = document.querySelector('.live-game-buttons-component > [aria-label="Share"],.game-icons-container-component > [aria-label="Share"]');
+    const shareBtn = document.querySelector<HTMLButtonElement>('.live-game-buttons-component > [aria-label="Share"],.game-icons-container-component > [aria-label="Share"]')!;
+
     shareBtn.click();
 
     const startTrying = Date.now();
@@ -28,13 +27,13 @@ export function createAnalyzeOnLichessBtn(port, variant = 'default') {
 
       if (pgnTabBtn) {
         pgnTabBtn.click();
-        const textarea = document.querySelector('.share-menu-tab-pgn-pgn-wrapper > textarea');
+        const textarea = document.querySelector<HTMLTextAreaElement>('.share-menu-tab-pgn-pgn-wrapper > textarea')!;
 
         if (textarea) {
           clearInterval(pgnTabBtnInterval);
           const pgn = textarea.value;
-          const closeBtn = document.querySelector('#share-modal [aria-label="Close"]');
-          closeBtn.click();
+          const closeBtn = document.querySelector<HTMLButtonElement>('#share-modal [aria-label="Close"]');
+          closeBtn!.click();
           port.postMessage({ command: 'openLichessTab', pgn });
 
           return;
@@ -59,11 +58,11 @@ export function createAnalyzeOnLichessBtn(port, variant = 'default') {
           `;
 
     btn.addEventListener('mouseover', () => {
-      btn.style.opacity = 0.82; // sibling btns are 0.72, but this one is thinner so make it more opaque to compensate
+      btn.style.opacity = '0.82'; // sibling btns are 0.72, but this one is thinner so make it more opaque to compensate
     });
 
     btn.addEventListener('mouseout', () => {
-      btn.style.opacity = 0.5;
+      btn.style.opacity = '0.5';
     });
 
     const icon = document.createElement('img');
@@ -123,7 +122,7 @@ export function createAnalyzeOnLichessBtn(port, variant = 'default') {
   return btn;
 }
 
-export function addBtnToPlaces(port) {
+export function addBtnToPlaces(port: browser.runtime.Port) {
   const gameOverModalBtns = document.querySelector('.game-over-modal-buttons');
   const gameReviewBtnSidebar = document.querySelector('.sidebar-component .game-review-buttons-component');
   const focusModeSidebarBottom = document.querySelector('.focus-mode-sidebar-bottom');
@@ -133,7 +132,7 @@ export function addBtnToPlaces(port) {
     gameOverModalBtns.prepend(createAnalyzeOnLichessBtn(port, 'small'));
   }
 
-  if (gameReviewBtnSidebar && !gameReviewBtnSidebar.parentElement.querySelector(`.${analyzeOnLichessClass}`)) {
+  if (gameReviewBtnSidebar && !gameReviewBtnSidebar.parentElement!.querySelector(`.${analyzeOnLichessClass}`)) {
     gameReviewBtnSidebar.insertAdjacentElement('beforebegin', createAnalyzeOnLichessBtn(port));
   }
 
@@ -141,7 +140,7 @@ export function addBtnToPlaces(port) {
     focusModeSidebarBottom.prepend(createAnalyzeOnLichessBtn(port));
   }
 
-  if (liveGameAnalysisBtn && !liveGameAnalysisBtn.parentElement.querySelector(`.${analyzeOnLichessClass}`)) {
+  if (liveGameAnalysisBtn && !liveGameAnalysisBtn.parentElement!.querySelector(`.${analyzeOnLichessClass}`)) {
     liveGameAnalysisBtn.insertAdjacentElement('afterend', createAnalyzeOnLichessBtn(port, 'icon'));
   }
 }

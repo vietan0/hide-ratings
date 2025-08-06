@@ -4,11 +4,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-function run(command) {
+function run(command: string) {
   return execSync(`npx ${command}`, { stdio: 'inherit' });
 }
 
-function parseArgs(args) {
+function parseArgs(args: Record<string, string | undefined>) {
   return Object.keys(args).reduce(
     (result, arg) => `${result} ${arg} ${args[arg]}`
     , '',

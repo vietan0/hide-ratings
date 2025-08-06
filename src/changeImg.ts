@@ -1,6 +1,6 @@
 function getTopPlayerColor() {
   const clock = document.querySelector('.player-component.player-top > .clock-component');
-  if (clock.classList.contains('clock-white'))
+  if (clock && clock.classList.contains('clock-white'))
     return 'white';
 
   return 'black';
@@ -15,7 +15,7 @@ export function overrideImg() {
   const placeholderImg = document.createElement('img');
   placeholderImg.id = placeholderImgId;
   placeholderImg.src = browser.runtime.getURL(`src/images/${getTopPlayerColor()}.png`);
-  imgContainer.append(placeholderImg);
+  imgContainer!.append(placeholderImg);
 }
 
 export function restoreImg() {

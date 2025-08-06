@@ -3,17 +3,17 @@ import { overrideUsername, placeholderUsername, restoreUsername } from './change
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
 
-let port;
+let port: browser.runtime.Port;
 
 function usernameFail() {
-  const currentUsername = document.getElementById('notifications-request').getAttribute('username');
-  const usernameDivs = Array.from(document.querySelectorAll('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
-  const usernamesInPage = usernameDivs.map(x => x.textContent.toLowerCase());
+  const currentUsername = document.getElementById('notifications-request')!.getAttribute('username')!;
+  const usernameDivs = Array.from(document.querySelectorAll<HTMLDivElement>('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
+  const usernamesInPage = usernameDivs.map(x => x.textContent!.toLowerCase());
   const bothUsernamesLoaded = !usernamesInPage.includes('opponent');
   const currentUserPlaying = usernamesInPage.includes(currentUsername.toLowerCase());
 
   if (!bothUsernamesLoaded || !currentUserPlaying) {
-    return { cond: false, reason: 'username' };
+    return { cond: false, reason: 'username' } as const;
   }
 }
 
@@ -32,14 +32,14 @@ const hideOpponentRegex = /chess.com\/(?:game\/(?:live|daily\/)?\d+$|play\/onlin
  * - This function doesn't check if hideOpponent code is already in effect (avatar & username replaced)
  * - If return `{ cond: true }`, proceed to hide opponent.
  * - If return `{ cond: false, reason: string }`, unhide/do nothing depends on the case.
- * @returns {{cond: boolean, reason?: string}} whether all conditions to invoke `startHideOpponent()` are met.
+ * @returns whether all conditions to invoke `startHideOpponent()` are met.
  */
-async function checkHideOpponentConds() {
+function checkHideOpponentConds() {
   // 1. url condition
   // 2. username-related conditions
   // 3. game over-related conditions
   if (!window.location.href.match(hideOpponentRegex))
-    return { cond: false, reason: 'url-not-match' };
+    return { cond: false, reason: 'url' } as const;
 
   return usernameFail() || isGameOver() || { cond: true };
 }
@@ -69,9 +69,7 @@ async function hideOrUnhide() {
     const { hideOpponent } = await browser.storage.local.get();
 
     if (hideOpponent) {
-      const result = await checkHideOpponentConds();
-
-      if (result.cond) {
+      if (checkHideOpponentConds().cond) {
         startHideOpponent();
       }
     }
@@ -86,6 +84,7 @@ const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
   const focusModeWasToggled = mutationList.some(m =>
     m.type === 'attributes'
     && m.attributeName === 'class'
+    && m.oldValue
     && m.oldValue.includes('player-component player-top'),
   );
 
@@ -98,9 +97,12 @@ const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
   }
 });
 
-const boardObserver = new MutationObserver(() => {
-  isGameOver() ? addBtnToPlaces(port) : removeAllBtns();
-});
+const boardObserver = new MutationObserver(() => isGameOver() ? addBtnToPlaces(port) : removeAllBtns());
+
+function observeForAnalyzeOnLichess() {
+  boardObserver.observe(document.getElementById('board-layout-main')!, { subtree: true, childList: true });
+  boardObserver.observe(document.getElementById('board-layout-sidebar')!, { subtree: true, childList: true });
+}
 
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
@@ -137,8 +139,7 @@ async function connectToBackground() {
 
   if (analyzeOnLichess) {
     if (window.location.href.match(analyzeOnLichessRegex)) {
-      boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
-      boardObserver.observe(document.getElementById('board-layout-sidebar'), { subtree: true, childList: true });
+      observeForAnalyzeOnLichess();
     }
   }
 
@@ -159,28 +160,21 @@ async function connectToBackground() {
 connectToBackground();
 
 browser.storage.local.onChanged.addListener(async (changes) => {
-  const [changedFeature] = Object.keys(changes); // I can do this because I only change one item at a time
-  const newValue = changes[changedFeature].newValue;
+  const [changedFeature, { newValue }] = Object.entries(changes)[0]!;
 
   if (changedFeature === 'hideOpponent') {
     if (newValue) {
       if (window.location.href.match(hideOpponentRegex)) {
-        const topPlayerComp = document.querySelector('.player-component.player-top');
+        topPlayerCompObserver.observe(document.querySelector('.player-component.player-top')!, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ['class'],
+          attributeOldValue: true,
+        });
 
-        if (topPlayerComp) {
-          topPlayerCompObserver.observe(topPlayerComp, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            attributeFilter: ['class'],
-            attributeOldValue: true,
-          });
-
-          const result = await checkHideOpponentConds();
-
-          if (result.cond) {
-            startHideOpponent();
-          }
+        if (checkHideOpponentConds().cond) {
+          startHideOpponent();
         }
       }
     }
@@ -193,8 +187,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   if (changedFeature === 'analyzeOnLichess') {
     if (newValue) {
       if (window.location.href.match(analyzeOnLichessRegex)) {
-        boardObserver.observe(document.getElementById('board-layout-main'), { subtree: true, childList: true });
-        boardObserver.observe(document.getElementById('board-layout-sidebar'), { subtree: true, childList: true });
+        observeForAnalyzeOnLichess();
 
         if (isGameOver()) {
           addBtnToPlaces(port);
