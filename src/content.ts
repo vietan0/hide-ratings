@@ -2,6 +2,8 @@ import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
 import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
+import { fetchAndRender, openingExplorerId } from './openingExplorer';
+import { type ExtStorage, isFeatureId } from './storageTypes';
 
 let port: browser.runtime.Port;
 
@@ -66,7 +68,7 @@ async function hideOrUnhide() {
     stopHideOpponent();
   }
   else {
-    const { hideOpponent } = await browser.storage.local.get();
+    const { hideOpponent } = await browser.storage.local.get() as ExtStorage;
 
     if (hideOpponent) {
       if (checkHideOpponentConds().cond) {
@@ -106,7 +108,7 @@ function observeForAnalyzeOnLichess() {
 
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
-  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess } = await browser.storage.local.get();
+  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess, openingExplorer } = await browser.storage.local.get() as ExtStorage;
 
   // 1. page loads, check storage to see what to execute
   if (hideRatings) {
@@ -143,6 +145,34 @@ async function connectToBackground() {
     }
   }
 
+  if (openingExplorer) {
+    if (window.location.href.match(/chess.com\/analysis/)) {
+      const analysisViewLinesObserver = new MutationObserver(() => {
+        fetchAndRender();
+      });
+
+      const bodyObserver = new MutationObserver(async () => {
+        const analysisViewLines = document.querySelector('.analysis-view-lines');
+
+        if (analysisViewLines) {
+          fetchAndRender();
+          analysisViewLinesObserver.observe(analysisViewLines, { attributes: true, attributeFilter: ['fen'] });
+          bodyObserver.disconnect();
+        }
+      });
+
+      if (document.getElementById(openingExplorerId)) {
+        // when content script re-loaded, but already injected
+        // needed in dev
+        analysisViewLinesObserver.observe(document.querySelector('.analysis-view-lines')!, { attributes: true, attributeFilter: ['fen'] });
+
+        return fetchAndRender();
+      }
+
+      bodyObserver.observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
   // 2. add listeners
   port.onMessage.addListener(async (message) => {
     console.log('CS received message:', message);
@@ -160,43 +190,46 @@ async function connectToBackground() {
 connectToBackground();
 
 browser.storage.local.onChanged.addListener(async (changes) => {
-  const [changedFeature, { newValue }] = Object.entries(changes)[0]!;
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const [changedKey, { newValue }] = entries[0]!;
 
-  if (changedFeature === 'hideOpponent') {
-    if (newValue) {
-      if (window.location.href.match(hideOpponentRegex)) {
-        topPlayerCompObserver.observe(document.querySelector('.player-component.player-top')!, {
-          subtree: true,
-          childList: true,
-          attributes: true,
-          attributeFilter: ['class'],
-          attributeOldValue: true,
-        });
+  if (isFeatureId(changedKey)) {
+    if (changedKey === 'hideOpponent') {
+      if (newValue) {
+        if (window.location.href.match(hideOpponentRegex)) {
+          topPlayerCompObserver.observe(document.querySelector('.player-component.player-top')!, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['class'],
+            attributeOldValue: true,
+          });
 
-        if (checkHideOpponentConds().cond) {
-          startHideOpponent();
+          if (checkHideOpponentConds().cond) {
+            startHideOpponent();
+          }
         }
       }
-    }
-    else {
-      stopHideOpponent();
-      topPlayerCompObserver.disconnect();
-    }
-  }
-
-  if (changedFeature === 'analyzeOnLichess') {
-    if (newValue) {
-      if (window.location.href.match(analyzeOnLichessRegex)) {
-        observeForAnalyzeOnLichess();
-
-        if (isGameOver()) {
-          addBtnToPlaces(port);
-        }
+      else {
+        stopHideOpponent();
+        topPlayerCompObserver.disconnect();
       }
     }
-    else {
-      removeAllBtns();
-      boardObserver.disconnect();
+
+    if (changedKey === 'analyzeOnLichess') {
+      if (newValue) {
+        if (window.location.href.match(analyzeOnLichessRegex)) {
+          observeForAnalyzeOnLichess();
+
+          if (isGameOver()) {
+            addBtnToPlaces(port);
+          }
+        }
+      }
+      else {
+        removeAllBtns();
+        boardObserver.disconnect();
+      }
     }
   }
 });

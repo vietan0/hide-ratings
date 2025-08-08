@@ -10,10 +10,8 @@
   "permissions": [
     "scripting",
     "storage",
-    "webNavigation",
-    "webRequest",
-    "webRequestBlocking",
-    "https://www.chess.com/*"
+    "https://www.chess.com/*",
+    "https://explorer.lichess.ovh/*"
   ],
   "background": {
     "scripts": [

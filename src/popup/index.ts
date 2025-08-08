@@ -1,7 +1,8 @@
 import features from '../features';
+import { type ExtStorage, type FeatureId, type FeatureStorage, isFeatureId } from '../storageTypes';
 
-async function renderSwitch(featureId: string, btn: HTMLButtonElement) {
-  const storage = await browser.storage.local.get(featureId);
+async function renderSwitch(featureId: FeatureId, btn: HTMLButtonElement) {
+  const storage = await browser.storage.local.get(featureId) as Pick<FeatureStorage, typeof featureId>;
   const switchIcon = document.createElement('img');
   switchIcon.className = 'max-w-7';
   switchIcon.id = `switch-${featureId}`;
@@ -11,8 +12,8 @@ async function renderSwitch(featureId: string, btn: HTMLButtonElement) {
 
 async function handleClick(e: MouseEvent) {
   const featureBtn = e.currentTarget as HTMLButtonElement;
-  const featureId = featureBtn.id;
-  const storage = await browser.storage.local.get(featureId);
+  const featureId = featureBtn.id as FeatureId;
+  const storage = await browser.storage.local.get(featureId) as Pick<FeatureStorage, typeof featureId>;
 
   await browser.storage.local.set({
     [featureId]: !storage[featureId],
@@ -49,16 +50,18 @@ async function renderBtns() {
   }
 }
 
-function updateSwitchIcon(changedFeature: string) {
-  const btn = document.getElementById(changedFeature) as HTMLButtonElement;
-  const oldSwitchIcon = document.getElementById(`switch-${changedFeature}`)!;
-  renderSwitch(changedFeature, btn);
+function updateSwitchIcon(featureId: FeatureId) {
+  const btn = document.getElementById(featureId) as HTMLButtonElement;
+  const oldSwitchIcon = document.getElementById(`switch-${featureId}`)!;
+  renderSwitch(featureId, btn);
   oldSwitchIcon.remove();
 }
 
 renderBtns();
 
 browser.storage.local.onChanged.addListener((changes) => {
-  const [changedFeature] = Object.entries(changes)[0]!;
-  updateSwitchIcon(changedFeature!);
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const [changedKey] = entries[0]!;
+  if (isFeatureId(changedKey))
+    updateSwitchIcon(changedKey);
 });

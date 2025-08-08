@@ -1,15 +1,31 @@
-import features from './features';
+import { type ExtStorage, isFeatureId } from './storageTypes';
 
 async function initiateStorage() {
   // initiate storage after first install
   const storage = await browser.storage.local.get();
 
   if (Object.entries(storage).length === 0) {
-    const initialValues: Record<string, boolean> = {};
-
-    for (const { id } of features) {
-      initialValues[id] = false;
-    }
+    const initialValues: ExtStorage = {
+      hideRatings: false,
+      hideOpponent: false,
+      hideFlags: false,
+      hideOwnFlagOnHome: false,
+      analyzeOnLichess: false,
+      openingExplorer: false,
+      database: 'lichess',
+      databaseOptions: {
+        lichess: {
+          speeds: ['bullet', 'blitz', 'rapid', 'classical', 'correspondence'],
+          ratings: [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500],
+          since: undefined,
+          until: undefined,
+        },
+        masters: {
+          since: undefined,
+          until: undefined,
+        },
+      },
+    };
 
     await browser.storage.local.set(initialValues);
   }
@@ -79,16 +95,19 @@ browser.runtime.onConnect.addListener((p) => {
 });
 
 browser.storage.local.onChanged.addListener(async (changes) => {
-  const [changedFeature, { newValue }] = Object.entries(changes)[0]!;
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const [changedKey, { newValue }] = entries[0]!;
 
-  if (changedFeature !== 'hideOpponent' && changedFeature !== 'analyzeOnLichess') {
-    // changes to hideOpponent are handled by content script
-    const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+  if (isFeatureId(changedKey)) {
+    if (changedKey !== 'hideOpponent' && changedKey !== 'analyzeOnLichess') {
+    // changes to hideOpponent and analyzeOnLichess are handled by content script
+      const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 
-    Promise.all(tabs.map(({ id }) =>
-      newValue
-        ? browser.scripting.insertCSS(getCSSDetails(changedFeature, id))
-        : browser.scripting.removeCSS(getCSSDetails(changedFeature, id)),
-    ));
+      Promise.all(tabs.map(({ id }) =>
+        newValue
+          ? browser.scripting.insertCSS(getCSSDetails(changedKey, id))
+          : browser.scripting.removeCSS(getCSSDetails(changedKey, id)),
+      ));
+    }
   }
 });
