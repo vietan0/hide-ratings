@@ -1,12 +1,12 @@
 import features from '../features';
+import renderSvg from '../renderSvg';
 import { type ExtStorage, type FeatureId, type FeatureStorage, isFeatureId } from '../storageTypes';
 
 async function renderSwitch(featureId: FeatureId, btn: HTMLButtonElement) {
   const storage = await browser.storage.local.get(featureId) as Pick<FeatureStorage, typeof featureId>;
-  const switchIcon = document.createElement('img');
-  switchIcon.className = 'max-w-7';
+  const switchIcon = await renderSvg(`src/icons/${storage[featureId] ? 'MdiToggleSwitch' : 'MdiToggleSwitchOff'}.svg`);
+  switchIcon.classList.add('max-w-8', storage[featureId] ? 'text-[#81b64c]' : 'text-zinc-500');
   switchIcon.id = `switch-${featureId}`;
-  switchIcon.src = storage[featureId] ? './LineMdSwitchOffTwotoneToSwitchTwotoneTransition.svg' : './LineMdSwitchTwotoneToSwitchOffTwotoneTransition.svg';
   btn.append(switchIcon);
 }
 
@@ -58,6 +58,17 @@ function updateSwitchIcon(featureId: FeatureId) {
 }
 
 renderBtns();
+
+async function renderFooterSvg() {
+  const container = document.getElementById('container')!;
+  const footer = container.nextElementSibling!;
+  const footerLink = footer.getElementsByTagName('a').item(0)!;
+  const svg = await renderSvg('src/icons/MdiLaunch.svg');
+  svg.classList.add('w-3', 'h-auto', 'inline-block', 'object-contain');
+  footerLink.append(svg);
+}
+
+renderFooterSvg();
 
 browser.storage.local.onChanged.addListener((changes) => {
   const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
