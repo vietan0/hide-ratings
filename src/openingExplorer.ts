@@ -1,4 +1,6 @@
-import type { ExtStorage } from './storageTypes';
+import capitalize from './capitalize';
+import renderSvg from './renderSvg';
+import { type ExtStorage, type Rating, type TimeControl, ratings, timeControls } from './storageTypes';
 
 type Opening = {
   eco: string;
@@ -27,14 +29,34 @@ interface Response {
 }
 
 export const openingExplorerId = 'openingExplorer';
-const scrollContainerId = 'scrollContainer';
+export const scrollContainerId = 'scrollContainer';
+const optionsId = 'options';
+
+export function isOptionsOpen() {
+  const openingExplorer = document.getElementById(openingExplorerId);
+
+  return openingExplorer && openingExplorer!.dataset.isOptionsOpen === 'true';
+}
+
 const cache = new Map<string, Response>();
 
 async function fetchLichess(fen: string) {
-  const lichessUrl = `https://explorer.lichess.ovh/lichess?variant=standard&fen=${fen}&speeds=bullet,blitz,rapid,classical,correspondence&ratings=1000,1200,1400,1600,1800,2000,2200,2500&topGames=0&recentGames=0`;
-  const masterUrl = `https://explorer.lichess.ovh/masters?fen=${fen}&topGames=0`;
-  const { database } = await browser.storage.local.get() as ExtStorage;
-  const url = database === 'lichess' ? lichessUrl : masterUrl;
+  const { database, databaseOptions } = await browser.storage.local.get() as ExtStorage;
+  let url = '';
+
+  if (database === 'lichess') {
+    const speeds = databaseOptions.lichess.speeds.join(',');
+    const ratings = databaseOptions.lichess.ratings.join(',');
+    const since = databaseOptions.lichess.since ? `&since=${databaseOptions.lichess.since}` : '';
+    const until = databaseOptions.lichess.until ? `&until=${databaseOptions.lichess.until}` : '';
+    url = `https://explorer.lichess.ovh/lichess?variant=standard&fen=${fen}&speeds=${speeds}&ratings=${ratings}&topGames=0&recentGames=0${since}${until}`;
+  }
+  else {
+    const since = databaseOptions.masters.since ? `&since=${databaseOptions.masters.since}` : '';
+    const until = databaseOptions.masters.until ? `&until=${databaseOptions.masters.until}` : '';
+    url = `https://explorer.lichess.ovh/masters?fen=${fen}&topGames=0${since}${until}`;
+  }
+
   const resInCache = cache.get(url);
 
   if (resInCache) {
@@ -44,16 +66,6 @@ async function fetchLichess(fen: string) {
   // set loading state before calling await fetch()
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
-
-  overlay.style = /* style */`
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    background-color: hsla(0, 0%, 0%, 0.2);
-  `;
-
   const openingExplorer = document.getElementById(openingExplorerId);
 
   if (openingExplorer) {
@@ -73,132 +85,90 @@ async function fetchLichess(fen: string) {
   return response;
 }
 
-function noGameFound(res: Response) {
-  return res.white === 0 && res.black === 0 && res.draws === 0;
-}
+function renderContent(res: Response) {
+  function renderTable(res: Response) {
+    function renderMoveRow(move: Move, total: number, isTotalRow = false) {
+      function renderPercentageBar(white: number, draws: number, black: number) {
+        function renderPercentageText(percentage: number) {
+          if (percentage >= 15)
+            return `${String(percentage)}%`;
+          if (percentage >= 10)
+            return String(percentage);
 
-function renderPercentageText(percentage: number) {
-  if (percentage >= 15)
-    return `${String(percentage)}%`;
-  if (percentage >= 10)
-    return String(percentage);
+          return '';
+        }
 
-  return '';
-}
+        const total = white + draws + black;
+        const wp = Math.round(white * 100 / total);
+        const bp = Math.round(black * 100 / total);
+        const dp = 100 - wp - bp;
+        const cell = document.createElement('td');
+        const percentageBar = document.createElement('div');
+        const whiteBar = document.createElement('span');
+        const drawBar = document.createElement('span');
+        const blackBar = document.createElement('span');
 
-function renderPercentageBar(white: number, draws: number, black: number) {
-  const total = white + draws + black;
-  const wp = Math.round(white * 100 / total);
-  const bp = Math.round(black * 100 / total);
-  const dp = 100 - wp - bp;
-  const cell = document.createElement('td');
-  const percentageBar = document.createElement('div');
+        whiteBar.textContent = renderPercentageText(wp);
+        drawBar.textContent = renderPercentageText(dp);
+        blackBar.textContent = renderPercentageText(bp);
 
-  cell.style = /* style */`
-    padding: 0px;
-    padding-inline-end: 8px;
-  `;
+        whiteBar.style = /* style */`
+          padding-inline-start: ${wp >= 10 && wp !== 100 ? '0.5rem' : '0'};
+          background-color: var(--color-bg-white-eval); 
+          color: var(--color-text-white-eval);
+          width: ${wp}%;
+          text-align: ${wp === 100 ? 'center' : 'start'};
+        `;
 
-  percentageBar.style = /* style */`
-    border-radius: var(--radius-s);
-    display: flex;
-    overflow: hidden;
-    font-size: 1.1rem;
-    font-weight: 600;
-    line-height: 2.3rem;
-  `;
+        drawBar.style = /* style */`
+          background-color: var(--color-bg-draw-eval); 
+          color: var(--color-text-draw-eval);
+          width: ${dp}%;
+          text-align: center;
+        `;
 
-  const whiteBar = document.createElement('span');
-  const drawBar = document.createElement('span');
-  const blackBar = document.createElement('span');
+        blackBar.style = /* style */`
+          padding-inline-end: ${bp >= 10 && bp !== 100 ? '0.5rem' : '0'};
+          background-color: var(--color-bg-black-eval); 
+          color: var(--color-text-black-eval);
+          width: ${bp}%;
+          text-align: ${bp === 100 ? 'center' : 'end'};
+        `;
 
-  whiteBar.textContent = renderPercentageText(wp);
-  drawBar.textContent = renderPercentageText(dp);
-  blackBar.textContent = renderPercentageText(bp);
+        cell.append(percentageBar);
+        percentageBar.append(whiteBar, drawBar, blackBar);
 
-  whiteBar.style = /* style */`
-    padding-inline: ${wp > 0 ? '0.5rem' : '0'};
-    background-color: var(--color-bg-white-eval); 
-    color: var(--color-text-white-eval);
-    width: ${wp}%;
-    text-align: start;
-  `;
+        return cell;
+      }
 
-  drawBar.style = /* style */`
-    padding-inline: ${dp > 0 ? '0.5rem' : '0'};
-    background-color: var(--color-bg-draw-eval); 
-    color: var(--color-text-draw-eval);
-    width: ${dp}%;
-    text-align: center;
-  `;
+      const moveRow = document.createElement('tr');
 
-  blackBar.style = /* style */`
-    padding-inline: ${bp > 0 ? '0.5rem' : '0'};
-    background-color: var(--color-bg-black-eval); 
-    color: var(--color-text-black-eval);
-    width: ${bp}%;
-    text-align: end;
-  `;
+      moveRow.style = /* style */`
+        font-weight: ${isTotalRow ? 700 : 400};
+        height: 28px; 
+        vertical-align: middle;
+      `;
 
-  cell.append(percentageBar);
-  percentageBar.append(whiteBar, drawBar, blackBar);
+      const moveTotal = move.white + move.draws + move.black;
+      const sanCell = document.createElement('td');
 
-  return cell;
-}
+      sanCell.textContent = move.san;
+      const percCell = document.createElement('td');
+      const perc = Math.round(moveTotal * 100 / total);
+      percCell.textContent = `${perc}%`;
 
-function renderMoveRow(move: Move, total: number, isTotalRow = false) {
-  const moveRow = document.createElement('tr');
+      const moveTotalCell = document.createElement('td');
+      moveTotalCell.textContent = new Intl.NumberFormat().format(moveTotal);
 
-  moveRow.style = /* style */`
-    font-weight: ${isTotalRow ? 700 : 400};
-    height: 28px; 
-    vertical-align: middle;
-  `;
+      moveRow.append(sanCell, percCell, moveTotalCell);
+      moveRow.append(renderPercentageBar(move.white, move.draws, move.black));
 
-  const moveTotal = move.white + move.draws + move.black;
-  const sanCell = document.createElement('td');
+      return moveRow;
+    }
 
-  sanCell.style = /* style */`
-    padding-inline-start: 8px;
-  `;
+    const table = document.createElement('table');
 
-  sanCell.textContent = move.san;
-  const percCell = document.createElement('td');
-
-  percCell.style = /* style */`
-    padding-inline-end: 8px;
-    font-size: 1.1rem;
-    color: var(--color-text-subtle);
-  `;
-
-  const perc = Math.round(moveTotal * 100 / total);
-  percCell.textContent = `${perc}%`;
-
-  const moveTotalCell = document.createElement('td');
-
-  moveTotalCell.style = /* style */`
-    padding-inline-end: 8px;
-    font-size: 1.1rem;
-    color: var(--color-text-subtle);
-    text-align: end;
-  `;
-
-  moveTotalCell.textContent = new Intl.NumberFormat().format(moveTotal);
-
-  moveRow.append(sanCell, percCell, moveTotalCell);
-  moveRow.append(renderPercentageBar(move.white, move.draws, move.black));
-
-  return moveRow;
-}
-
-function renderTable(res: Response) {
-  const table = document.createElement('table');
-
-  table.style = /* style */`
-    border-collapse: collapse;
-  `;
-
-  table.innerHTML = /* html */`
+    table.innerHTML = /* html */`
     <colgroup>
       <col style="width: 40px">
       <col style="width: 30px">
@@ -207,92 +177,406 @@ function renderTable(res: Response) {
     </colgroup>
   `;
 
-  const thead = document.createElement('thead');
-  const tbody = document.createElement('tbody');
-  const tfoot = document.createElement('tfoot');
-  const total = res.white + res.draws + res.black;
-  const moveRows = res.moves.map(move => renderMoveRow(move, total));
+    const thead = document.createElement('thead');
+    const tbody = document.createElement('tbody');
+    const tfoot = document.createElement('tfoot');
+    const total = res.white + res.draws + res.black;
+    const moveRows = res.moves.map(move => renderMoveRow(move, total));
 
-  const totalRow = renderMoveRow({
-    averageRating: 0,
-    white: res.white,
-    draws: res.draws,
-    black: res.black,
-    game: null,
-    opening: null,
-    san: 'Σ',
-    uci: 'Σ',
-  }, total, true);
+    const totalRow = renderMoveRow({
+      averageRating: 0,
+      white: res.white,
+      draws: res.draws,
+      black: res.black,
+      game: null,
+      opening: null,
+      san: 'Σ',
+      uci: 'Σ',
+    }, total, true);
 
-  tbody.append(...moveRows);
-  tfoot.append(totalRow);
-  table.append(thead, tbody, tfoot);
+    tbody.append(...moveRows);
+    tfoot.append(totalRow);
+    table.append(thead, tbody, tfoot);
 
-  return table;
-}
+    return table;
+  }
 
-function renderNoGameFound() {
-  const p = document.createElement('p');
+  function renderNoGameFound() {
+    const p = document.createElement('p');
 
-  p.style = /* style */`
-      font-size: 14px;
+    p.style = /* style */`
+      font-size: 1.3rem;
       text-align: center; 
       font-style: italic; 
-      padding-block: 8px;
+      padding-block: 1rem;
     `;
 
-  p.textContent = 'No game found';
+    p.textContent = 'No game found';
 
-  return p;
+    return p;
+  }
+
+  const scrollContainer = document.createElement('div');
+  scrollContainer.id = scrollContainerId;
+  const noGameFound = res.white === 0 && res.black === 0 && res.draws === 0;
+  scrollContainer.append(noGameFound ? renderNoGameFound() : renderTable(res));
+
+  return scrollContainer;
 }
 
-function renderScrollContent(res: Response): HTMLParagraphElement | HTMLTableElement {
-  return noGameFound(res) ? renderNoGameFound() : renderTable(res);
-}
+async function renderOptions() {
+  function validateYear(val: string) {
+    if (val === '')
+      return true;
+    const regex = /^\d{4}$/;
+    if (!regex.test(val))
+      return false;
 
-async function renderTabs() {
-  const tabs = document.createElement('div');
-  const { database } = await browser.storage.local.get() as ExtStorage;
+    const year = Number(val);
+    if (year < 1952)
+      return false;
 
-  const btns = ['masters', 'lichess'].map((val) => {
+    return true;
+  }
+
+  function validateYearMonth(val: string) {
+    if (val === '')
+      return true;
+    const regex = /^\d{4}-\d{2}$/;
+
+    if (!regex.test(val))
+      return false;
+
+    const year = Number(val.slice(0, 4));
+    const month = Number(val.slice(5));
+    if (year < 1952)
+      return false;
+    if (month < 1 || month > 12)
+      return false;
+
+    return true;
+  }
+
+  function shallowCompare(o1: { [key: string]: any }, o2: { [key: string]: any }) {
+    for (const key in o1) {
+      const prop1 = o1[key];
+      const prop2 = o2[key];
+
+      if (Array.isArray(prop1) && Array.isArray(prop2)) {
+      // compare arrays
+        if (prop1.length !== prop2.length
+          || !prop1.every((val, i) => val === prop2[i])
+          || !prop2.every((val, i) => val === prop1[i])
+        ) {
+          return false;
+        }
+      }
+      else if (prop1 !== prop2) {
+      // compare primitives
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  async function renderTimeControlBtn(timeControl: TimeControl) {
+    const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
+    const currentSelected = databaseOptions.lichess.speeds.includes(timeControl);
     const btn = document.createElement('button');
-    const selected = database === val;
-    // background-color: ${selected ? 'var(--color-bg-subtler)' : 'transparent'};
+    btn.className = 'timeControl';
+    if (currentSelected)
+      btn.classList.add('selected');
+    btn.type = 'button';
+    btn.ariaLabel = timeControl;
+    btn.title = capitalize(timeControl);
 
-    btn.style = /* style */`
-      border: none; 
-      padding: 0.5rem 1.5rem;
-      background-color: ${selected ? 'var(--color-bg-subtlest)' : 'transparent'};
-      color: ${selected ? 'var(--color-text-bolder)' : 'var(--color-text-default)'};
-      border-top: ${selected ? 'var(--border-s) solid var(--color-border-subtler)' : 'none'};
-      font-size: 1.2rem;
-      font-weight: ${selected ? '600' : '400'};
-      cursor: ${selected ? 'initial' : 'pointer'};
-    `;
-
-    btn.onmouseenter = () => {
-      if (!selected)
-        btn.style.backgroundColor = 'var(--color-bg-subtlest)';
-    };
-
-    btn.onmouseleave = () => {
-      btn.style.backgroundColor = selected ? 'var(--color-bg-subtlest)' : 'transparent';
-    };
+    const timeControlIcon = await renderSvg(`src/icons/timeControl/${timeControl}.svg`);
+    btn.append(timeControlIcon);
 
     btn.onclick = () => {
-      browser.storage.local.set({ database: val });
+      btn.classList.toggle('selected');
+    };
+
+    return btn;
+  }
+
+  async function renderRatingBtn(rating: Rating) {
+    const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
+    const currentSelected = databaseOptions.lichess.ratings.includes(rating);
+    const btn = document.createElement('button');
+    btn.className = 'rating';
+    if (currentSelected)
+      btn.classList.add('selected');
+    btn.type = 'button';
+
+    btn.textContent = String(rating);
+
+    btn.onclick = () => {
+      btn.classList.toggle('selected');
+    };
+
+    return btn;
+  }
+
+  const { database } = await browser.storage.local.get() as ExtStorage;
+  const options = document.createElement('div');
+  options.id = optionsId;
+  const form = document.createElement('form');
+  const submit = document.createElement('button');
+  submit.type = 'submit';
+  submit.className = 'cc-button-component cc-button-primary cc-button-medium cc-bg-primary analysis-view-button';
+  submit.textContent = 'Save';
+
+  /*
+    - gather info from inputs into an object
+    - if obj is identical from current storage
+    - 1. openingExplorer.dataset.isOptionsOpen = 'false';
+    - 2. fetchAndRender()
+
+    - if obj is different
+    - 1. storage.set(newObj)
+    - 2. openingExplorer.dataset.isOptionsOpen = 'false';
+    - 3. fetchAndRender()
+  */
+  if (database === 'lichess') {
+    const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
+    // time control (must be in order)
+    const timeControlWrapper = document.createElement('div');
+    const p = document.createElement('p');
+    p.className = 'label';
+    p.textContent = 'Time control';
+    const timeControlBtnsContainer = document.createElement('div');
+    const timeControlBtns = await Promise.all(timeControls.map(tc => renderTimeControlBtn(tc)));
+    timeControlBtnsContainer.append(...timeControlBtns);
+    timeControlWrapper.append(p, timeControlBtnsContainer);
+    form.append(timeControlWrapper);
+
+    // rating
+    const ratingWrapper = document.createElement('div');
+    const p2 = document.createElement('p');
+    p2.className = 'label';
+    p2.textContent = 'Rating';
+    const ratingBtnsContainer = document.createElement('div');
+    const ratingBtns = await Promise.all(ratings.map(r => renderRatingBtn(r)));
+    ratingBtnsContainer.append(...ratingBtns);
+    ratingWrapper.append(p2, ratingBtnsContainer);
+    form.append(ratingWrapper);
+
+    // since
+    const sinceUntil = document.createElement('div');
+    sinceUntil.id = 'sinceUntil';
+    const sinceWrapper = document.createElement('div');
+    const sinceLabel = document.createElement('p');
+    sinceLabel.className = 'label';
+    sinceLabel.textContent = 'Since';
+    const sinceInput = document.createElement('input');
+    sinceInput.name = 'since';
+    sinceInput.title = 'Insert year and month in YYYY-MM format starting from 1952-01';
+    sinceInput.placeholder = 'YYYY-MM';
+    sinceInput.value = databaseOptions.lichess.since || '';
+
+    sinceInput.oninput = () => {
+      const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
+      const untilInput = form.querySelector('input[name=\'until\']')! as HTMLInputElement;
+      submitBtn.disabled = !validateYearMonth(sinceInput.value) || !validateYearMonth(untilInput.value);
+    };
+
+    sinceWrapper.append(sinceLabel, sinceInput);
+
+    // until
+    const untilWrapper = document.createElement('div');
+    const untilLabel = document.createElement('p');
+    untilLabel.className = 'label';
+    untilLabel.textContent = 'Until';
+    const untilInput = document.createElement('input');
+    untilInput.name = 'until';
+    untilInput.title = 'Insert year and month in YYYY-MM format starting from 1952-01';
+    untilInput.placeholder = 'YYYY-MM';
+    untilInput.value = databaseOptions.lichess.until || '';
+
+    untilInput.oninput = () => {
+      const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
+      submitBtn.disabled = !validateYearMonth(sinceInput.value) || !validateYearMonth(untilInput.value);
+    };
+
+    untilWrapper.append(untilLabel, untilInput);
+
+    sinceUntil.append(sinceWrapper, untilWrapper);
+    form.append(sinceUntil);
+
+    submit.onclick = async (e) => {
+      e.preventDefault();
+
+      const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
+
+      const selectedTimeControls = timeControlBtns.map((btn) => {
+        const timeControl = btn.ariaLabel as TimeControl;
+        const selected = btn.classList.contains('selected');
+
+        return selected ? timeControl : null;
+      }).filter(x => x !== null);
+
+      const selectedRatings = ratingBtns.map((btn) => {
+        const rating = btn.textContent;
+        const selected = btn.classList.contains('selected');
+
+        return selected ? Number(rating) as Rating : null;
+      }).filter(x => x !== null);
+
+      const submittedLichessOptions: typeof databaseOptions.lichess = {
+        speeds: selectedTimeControls,
+        ratings: selectedRatings,
+        since: sinceInput.value || undefined,
+        until: untilInput.value || undefined,
+      };
+
+      const formChanged = !shallowCompare(databaseOptions.lichess, submittedLichessOptions);
+
+      if (formChanged) {
+        browser.storage.local.set({
+          databaseOptions: {
+            ...databaseOptions,
+            lichess: submittedLichessOptions,
+          },
+        });
+      }
+
+      document.getElementById(openingExplorerId)!.dataset.isOptionsOpen = 'false';
+      fetchAndRender();
+    };
+  }
+  else {
+    const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
+    // since
+    const sinceUntil = document.createElement('div');
+    sinceUntil.id = 'sinceUntil';
+    const sinceWrapper = document.createElement('div');
+    const sinceLabel = document.createElement('p');
+    sinceLabel.className = 'label';
+    sinceLabel.textContent = 'Since';
+    const sinceInput = document.createElement('input');
+    sinceInput.name = 'since';
+    sinceInput.title = 'Insert year in YYYY format starting from 1952';
+    sinceInput.placeholder = 'YYYY';
+    sinceInput.value = databaseOptions.masters.since ? String(databaseOptions.masters.since) : '';
+
+    sinceInput.oninput = () => {
+      const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
+      const untilInput = form.querySelector('input[name=\'until\']')! as HTMLInputElement;
+      submitBtn.disabled = !validateYear(sinceInput.value) || !validateYear(untilInput.value);
+    };
+
+    sinceWrapper.append(sinceLabel, sinceInput);
+
+    // until
+    const untilWrapper = document.createElement('div');
+    const untilLabel = document.createElement('p');
+    untilLabel.className = 'label';
+    untilLabel.textContent = 'Until';
+    const untilInput = document.createElement('input');
+    untilInput.name = 'until';
+    untilInput.title = 'Insert year in YYYY format starting from 1952';
+    untilInput.placeholder = 'YYYY';
+    untilInput.value = databaseOptions.masters.until ? String(databaseOptions.masters.until) : '';
+
+    untilInput.oninput = () => {
+      const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
+      submitBtn.disabled = !validateYear(sinceInput.value) || !validateYear(untilInput.value);
+    };
+
+    untilWrapper.append(untilLabel, untilInput);
+    sinceUntil.append(sinceWrapper, untilWrapper);
+    form.append(sinceUntil);
+
+    submit.onclick = async (e) => {
+      e.preventDefault();
+      const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
+
+      const submittedMastersOptions: typeof databaseOptions.masters = {
+        since: sinceInput.value ? Number(sinceInput.value) : undefined,
+        until: untilInput.value ? Number(untilInput.value) : undefined,
+      };
+
+      const formChanged = !shallowCompare(databaseOptions.masters, submittedMastersOptions);
+
+      if (formChanged) {
+        browser.storage.local.set({
+          databaseOptions: {
+            ...databaseOptions,
+            masters: submittedMastersOptions,
+          },
+        });
+      }
+
+      document.getElementById(openingExplorerId)!.dataset.isOptionsOpen = 'false';
+      fetchAndRender();
+    };
+  }
+
+  form.append(submit);
+  options.append(form);
+
+  return options;
+}
+
+async function renderContentOrOptions(res: Response) {
+  return isOptionsOpen() ? await renderOptions() : renderContent(res);
+}
+
+async function renderHeader() {
+  async function renderTabs() {
+    const tabs = document.createElement('div');
+    tabs.id = 'tabs';
+    const { database } = await browser.storage.local.get() as ExtStorage;
+
+    const btns = ['masters', 'lichess'].map((val) => {
+      const btn = document.createElement('button');
+      const selected = database === val;
+      if (selected)
+        btn.classList.add('selected');
+
+      btn.onclick = () => {
+        browser.storage.local.set({ database: val });
+        fetchAndRender();
+      };
+
+      btn.disabled = selected;
+      btn.textContent = capitalize(val);
+
+      return btn;
+    });
+
+    tabs.append(...btns);
+
+    return tabs;
+  }
+
+  async function renderOptionsBtn() {
+    const optionsBtn = document.createElement('button');
+    optionsBtn.id = 'optionsBtn';
+    const cogIcon = await renderSvg('src/icons/MdiCog.svg');
+    optionsBtn.append(cogIcon);
+
+    optionsBtn.onclick = async () => {
+      const openingExplorer = document.getElementById(openingExplorerId)!;
+      openingExplorer.dataset.isOptionsOpen = openingExplorer.dataset.isOptionsOpen === 'true' ? 'false' : 'true';
       fetchAndRender();
     };
 
-    btn.disabled = selected;
-    btn.textContent = val[0]!.toUpperCase() + val.slice(1);
+    return optionsBtn;
+  }
 
-    return btn;
-  });
+  const header = document.createElement('div');
 
-  tabs.append(...btns);
+  header.style = /* style */`
+    display: flex;
+    justify-content: space-between;
+  `;
 
-  return tabs;
+  header.append(await renderTabs(), await renderOptionsBtn());
+
+  return header;
 }
 
 async function renderOpeningExplorer(res: Response) {
@@ -300,12 +584,12 @@ async function renderOpeningExplorer(res: Response) {
 
   if (existingOpeningExplorer) {
     // if there is openingExplorer in the DOM, update table & tabs only
-    const tabs = existingOpeningExplorer.firstElementChild!;
-    tabs.insertAdjacentElement('beforebegin', await renderTabs());
-    tabs.remove();
-    const scrollContent = document.getElementById(scrollContainerId)!.firstElementChild!;
-    scrollContent.insertAdjacentElement('beforebegin', renderScrollContent(res));
-    scrollContent.remove();
+    const header = existingOpeningExplorer.firstElementChild!;
+    header.insertAdjacentElement('beforebegin', await renderHeader());
+    header.remove();
+    const scrollContainerOrOptions = existingOpeningExplorer.querySelector(`#${scrollContainerId}, #${optionsId}`)!;
+    scrollContainerOrOptions.insertAdjacentElement('beforebegin', await renderContentOrOptions(res));
+    scrollContainerOrOptions.remove();
 
     return;
   }
@@ -313,23 +597,8 @@ async function renderOpeningExplorer(res: Response) {
   const parent = document.querySelector('.analysis-view-component')!;
   const openingExplorer = document.createElement('div');
   openingExplorer.id = openingExplorerId;
-
-  openingExplorer.style = /* style */`
-    position: relative;
-    border-bottom: .1rem solid var(--color-border-default);
-  `;
-
-  const scrollContainer = document.createElement('div');
-  scrollContainer.id = scrollContainerId;
-
-  scrollContainer.style = /* style */`
-    max-height: 90px;
-    overflow-y: scroll;
-    background-color: var(--color-bg-subtlest);
-  `;
-
-  scrollContainer.append(renderScrollContent(res));
-  openingExplorer.append(await renderTabs(), scrollContainer);
+  openingExplorer.dataset.isOptionsOpen = 'false';
+  openingExplorer.append(await renderHeader(), renderContent(res));
   parent.prepend(openingExplorer);
 }
 

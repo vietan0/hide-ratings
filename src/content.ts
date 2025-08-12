@@ -2,7 +2,7 @@ import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
 import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
-import { fetchAndRender, openingExplorerId } from './openingExplorer';
+import { fetchAndRender, isOptionsOpen, openingExplorerId } from './openingExplorer';
 import { type ExtStorage, isFeatureId } from './storageTypes';
 
 let port: browser.runtime.Port;
@@ -28,6 +28,7 @@ function hideOpponentInEffect() {
 
 // details: https://regexr.com/8gcck
 const hideOpponentRegex = /chess.com\/(?:game\/(?:live|daily\/)?\d+$|play\/online\/new)/;
+const openingExplorerRegex = /chess.com\/analysis/;
 
 /**
  * - This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
@@ -101,6 +102,11 @@ const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
 
 const boardObserver = new MutationObserver(() => isGameOver() ? addBtnToPlaces(port) : removeAllBtns());
 
+const analysisViewLinesObserver = new MutationObserver(() => {
+  if (!isOptionsOpen())
+    fetchAndRender();
+});
+
 function observeForAnalyzeOnLichess() {
   boardObserver.observe(document.getElementById('board-layout-main')!, { subtree: true, childList: true });
   boardObserver.observe(document.getElementById('board-layout-sidebar')!, { subtree: true, childList: true });
@@ -146,15 +152,12 @@ async function connectToBackground() {
   }
 
   if (openingExplorer) {
-    if (window.location.href.match(/chess.com\/analysis/)) {
-      const analysisViewLinesObserver = new MutationObserver(() => {
-        fetchAndRender();
-      });
-
+    if (window.location.href.match(openingExplorerRegex)) {
       const bodyObserver = new MutationObserver(async () => {
         const analysisViewLines = document.querySelector('.analysis-view-lines');
 
         if (analysisViewLines) {
+          port.postMessage({ command: 'openingExplorer' });
           fetchAndRender();
           analysisViewLinesObserver.observe(analysisViewLines, { attributes: true, attributeFilter: ['fen'] });
           bodyObserver.disconnect();
@@ -164,9 +167,11 @@ async function connectToBackground() {
       if (document.getElementById(openingExplorerId)) {
         // when content script re-loaded, but already injected
         // needed in dev
+        port.postMessage({ command: 'openingExplorer' });
+        fetchAndRender();
         analysisViewLinesObserver.observe(document.querySelector('.analysis-view-lines')!, { attributes: true, attributeFilter: ['fen'] });
 
-        return fetchAndRender();
+        return;
       }
 
       bodyObserver.observe(document.body, { childList: true, subtree: true });
@@ -229,6 +234,20 @@ browser.storage.local.onChanged.addListener(async (changes) => {
       else {
         removeAllBtns();
         boardObserver.disconnect();
+      }
+    }
+
+    if (changedKey === 'openingExplorer') {
+      if (newValue) {
+        if (window.location.href.match(openingExplorerRegex)) {
+          fetchAndRender();
+          const analysisViewLines = document.querySelector('.analysis-view-lines')!;
+          analysisViewLinesObserver.observe(analysisViewLines, { attributes: true, attributeFilter: ['fen'] });
+        }
+      }
+      else {
+        document.getElementById(openingExplorerId)?.remove();
+        analysisViewLinesObserver.disconnect();
       }
     }
   }

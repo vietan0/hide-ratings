@@ -83,6 +83,14 @@ browser.runtime.onConnect.addListener((p) => {
         break;
       }
 
+      case 'openingExplorer':
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('openingExplorer', id))));
+        break;
+
+      case 'hideOpeningExplorer':
+        Promise.all(tabs.map(({ id }) => browser.scripting.removeCSS(getCSSDetails('openingExplorer', id))));
+        break;
+
       default:
         throw new Error(`Unhandled message.command: ${msgTyped.command}`);
     }

@@ -7,15 +7,15 @@ export function isFeatureId(key: string): key is FeatureId {
 }
 
 export type FeatureStorage = Record<FeatureId, boolean>;
-
-type Speed = 'ultraBullet' | 'bullet' | 'blitz' | 'rapid' | 'classical' | 'correspondence';
-type Rating = 1000 | 1200 | 1400 | 1600 | 1800 | 2000 | 2200 | 2500;
-
+export const timeControls = ['ultraBullet', 'bullet', 'blitz', 'rapid', 'classical', 'correspondence'] as const;
+export type TimeControl = typeof timeControls[number];
+export const ratings = [400, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500] as const;
+export type Rating = typeof ratings[number];
 export interface ExtStorage extends FeatureStorage {
   database: 'lichess' | 'masters';
   databaseOptions: {
     lichess: {
-      speeds: Speed[];
+      speeds: TimeControl[];
       ratings: Rating[];
       since: string | undefined;
       until: string | undefined;
