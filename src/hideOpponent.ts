@@ -4,7 +4,7 @@ import isGameOver from './isGameOver';
 import type { ExtStorage } from './storageTypes';
 
 // details: https://regexr.com/8gcck
-export const hideOpponentRegex = /chess.com\/(?:game\/(?:live|daily\/)?\d+$|play\/online\/new)/;
+export const hideOpponentRegex = /chess.com\/(?:game\/(?:live\/|daily\/)?\d+|play\/online\/new)/;
 
 function usernameFail() {
   const currentUsername = document.getElementById('notifications-request')!.getAttribute('username')!;
