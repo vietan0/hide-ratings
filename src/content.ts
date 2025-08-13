@@ -1,6 +1,6 @@
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
-import { fetchAndRender, isOptionsOpen, openingExplorerId, openingExplorerRegex } from './openingExplorer';
+import { isOptionsOpen, openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
 import { type ExtStorage, isFeatureId } from './storageTypes';
 import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
 
@@ -36,7 +36,7 @@ function observeForAnalyzeOnLichess() {
 
 const analysisViewLinesObserver = new MutationObserver(() => {
   if (!isOptionsOpen())
-    fetchAndRender();
+    renderOpeningExplorer();
 });
 
 function startOpeningExplorer() {
@@ -46,7 +46,7 @@ function startOpeningExplorer() {
     return;
 
   port.postMessage({ command: 'openingExplorer' });
-  fetchAndRender();
+  renderOpeningExplorer();
   analysisViewLinesObserver.observe(analysisViewLines, { attributes: true, attributeFilter: ['fen'] });
 }
 

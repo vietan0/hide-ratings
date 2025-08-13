@@ -78,7 +78,7 @@
   color: var(--color-text-default);
 }
 
-#scrollContainer {
+#content {
   max-height: 90px;
   overflow-y: scroll;
   background-color: var(--color-bg-subtlest);

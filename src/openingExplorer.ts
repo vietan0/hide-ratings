@@ -29,8 +29,9 @@ interface Response {
 }
 
 export const openingExplorerId = 'openingExplorer';
-export const scrollContainerId = 'scrollContainer';
+export const contentId = 'content';
 const optionsId = 'options';
+const cache = new Map<string, Response>();
 
 export function isOptionsOpen() {
   const openingExplorer = document.getElementById(openingExplorerId);
@@ -38,54 +39,107 @@ export function isOptionsOpen() {
   return openingExplorer && openingExplorer!.dataset.isOptionsOpen === 'true';
 }
 
-const cache = new Map<string, Response>();
+async function renderHeader() {
+  async function renderTabs() {
+    const tabs = document.createElement('div');
+    tabs.id = 'tabs';
+    const { database } = await browser.storage.local.get() as ExtStorage;
 
-async function fetchLichess(fen: string) {
-  const { database, databaseOptions } = await browser.storage.local.get() as ExtStorage;
-  let url = '';
+    const btns = ['masters', 'lichess'].map((val) => {
+      const btn = document.createElement('button');
+      const selected = database === val;
+      if (selected)
+        btn.classList.add('selected');
 
-  if (database === 'lichess') {
-    const speeds = databaseOptions.lichess.speeds.join(',');
-    const ratings = databaseOptions.lichess.ratings.join(',');
-    const since = databaseOptions.lichess.since ? `&since=${databaseOptions.lichess.since}` : '';
-    const until = databaseOptions.lichess.until ? `&until=${databaseOptions.lichess.until}` : '';
-    url = `https://explorer.lichess.ovh/lichess?variant=standard&fen=${fen}&speeds=${speeds}&ratings=${ratings}&topGames=0&recentGames=0${since}${until}`;
-  }
-  else {
-    const since = databaseOptions.masters.since ? `&since=${databaseOptions.masters.since}` : '';
-    const until = databaseOptions.masters.until ? `&until=${databaseOptions.masters.until}` : '';
-    url = `https://explorer.lichess.ovh/masters?fen=${fen}&topGames=0${since}${until}`;
-  }
+      btn.onclick = async () => {
+        browser.storage.local.set({ database: val });
+        renderOpeningExplorer();
+      };
 
-  const resInCache = cache.get(url);
+      btn.disabled = selected;
+      btn.textContent = capitalize(val);
 
-  if (resInCache) {
-    return resInCache;
-  }
+      return btn;
+    });
 
-  // set loading state before calling await fetch()
-  const overlay = document.createElement('div');
-  overlay.className = 'overlay';
-  const openingExplorer = document.getElementById(openingExplorerId);
+    tabs.append(...btns);
 
-  if (openingExplorer) {
-    openingExplorer!.append(overlay);
+    return tabs;
   }
 
-  const response = await fetch(url)
-    .then(r => r.json())
-    .catch(err => console.error('There has been an error fetching from Lichess', err)) as Response;
+  async function renderOptionsBtn() {
+    const optionsBtn = document.createElement('button');
+    optionsBtn.id = 'optionsBtn';
+    const cogIcon = await renderSvg('src/icons/MdiCog.svg');
+    optionsBtn.append(cogIcon);
 
-  for (const div of document.getElementsByClassName('overlay')) {
-    div.remove();
+    optionsBtn.onclick = async () => {
+      const openingExplorer = document.getElementById(openingExplorerId)!;
+      openingExplorer.dataset.isOptionsOpen = openingExplorer.dataset.isOptionsOpen === 'true' ? 'false' : 'true';
+      renderOpeningExplorer();
+    };
+
+    return optionsBtn;
   }
 
-  cache.set(url, response);
+  const header = document.createElement('div');
 
-  return response;
+  header.style = /* style */`
+    display: flex;
+    justify-content: space-between;
+  `;
+
+  header.append(await renderTabs(), await renderOptionsBtn());
+
+  return header;
 }
 
-function renderContent(res: Response) {
+async function renderContent() {
+  async function fetchLichess(fen: string) {
+    const { database, databaseOptions } = await browser.storage.local.get() as ExtStorage;
+    let url = '';
+
+    if (database === 'lichess') {
+      const speeds = databaseOptions.lichess.speeds.join(',');
+      const ratings = databaseOptions.lichess.ratings.join(',');
+      const since = databaseOptions.lichess.since ? `&since=${databaseOptions.lichess.since}` : '';
+      const until = databaseOptions.lichess.until ? `&until=${databaseOptions.lichess.until}` : '';
+      url = `https://explorer.lichess.ovh/lichess?variant=standard&fen=${fen}&speeds=${speeds}&ratings=${ratings}&topGames=0&recentGames=0${since}${until}`;
+    }
+    else {
+      const since = databaseOptions.masters.since ? `&since=${databaseOptions.masters.since}` : '';
+      const until = databaseOptions.masters.until ? `&until=${databaseOptions.masters.until}` : '';
+      url = `https://explorer.lichess.ovh/masters?fen=${fen}&topGames=0${since}${until}`;
+    }
+
+    const resInCache = cache.get(url);
+
+    if (resInCache) {
+      return resInCache;
+    }
+
+    // set loading state before calling await fetch()
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    const openingExplorer = document.getElementById(openingExplorerId);
+
+    if (openingExplorer) {
+      openingExplorer!.append(overlay);
+    }
+
+    const response = await fetch(url)
+      .then(r => r.json())
+      .catch(err => console.error('There has been an error fetching from Lichess', err)) as Response;
+
+    for (const div of document.getElementsByClassName('overlay')) {
+      div.remove();
+    }
+
+    cache.set(url, response);
+
+    return response;
+  }
+
   function renderTable(res: Response) {
     function renderMoveRow(move: Move, total: number, isTotalRow = false) {
       function renderPercentageBar(white: number, draws: number, black: number) {
@@ -216,12 +270,15 @@ function renderContent(res: Response) {
     return p;
   }
 
-  const scrollContainer = document.createElement('div');
-  scrollContainer.id = scrollContainerId;
+  const analysisViewLines = document.querySelector('.analysis-view-lines')!;
+  const fen = analysisViewLines.getAttribute('fen')!;
+  const res = await fetchLichess(fen);
+  const content = document.createElement('div');
+  content.id = contentId;
   const noGameFound = res.white === 0 && res.black === 0 && res.draws === 0;
-  scrollContainer.append(noGameFound ? renderNoGameFound() : renderTable(res));
+  content.append(noGameFound ? renderNoGameFound() : renderTable(res));
 
-  return scrollContainer;
+  return content;
 }
 
 async function renderOptions() {
@@ -332,12 +389,12 @@ async function renderOptions() {
     - gather info from inputs into an object
     - if obj is identical from current storage
     - 1. openingExplorer.dataset.isOptionsOpen = 'false';
-    - 2. fetchAndRender()
+    - 2. renderOpeningExplorer()
 
     - if obj is different
     - 1. storage.set(newObj)
     - 2. openingExplorer.dataset.isOptionsOpen = 'false';
-    - 3. fetchAndRender()
+    - 3. renderOpeningExplorer()
   */
   if (database === 'lichess') {
     const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
@@ -443,7 +500,7 @@ async function renderOptions() {
       }
 
       document.getElementById(openingExplorerId)!.dataset.isOptionsOpen = 'false';
-      fetchAndRender();
+      renderOpeningExplorer();
     };
   }
   else {
@@ -510,7 +567,7 @@ async function renderOptions() {
       }
 
       document.getElementById(openingExplorerId)!.dataset.isOptionsOpen = 'false';
-      fetchAndRender();
+      renderOpeningExplorer();
     };
   }
 
@@ -520,76 +577,18 @@ async function renderOptions() {
   return options;
 }
 
-async function renderContentOrOptions(res: Response) {
-  return isOptionsOpen() ? await renderOptions() : renderContent(res);
-}
-
-async function renderHeader() {
-  async function renderTabs() {
-    const tabs = document.createElement('div');
-    tabs.id = 'tabs';
-    const { database } = await browser.storage.local.get() as ExtStorage;
-
-    const btns = ['masters', 'lichess'].map((val) => {
-      const btn = document.createElement('button');
-      const selected = database === val;
-      if (selected)
-        btn.classList.add('selected');
-
-      btn.onclick = () => {
-        browser.storage.local.set({ database: val });
-        fetchAndRender();
-      };
-
-      btn.disabled = selected;
-      btn.textContent = capitalize(val);
-
-      return btn;
-    });
-
-    tabs.append(...btns);
-
-    return tabs;
-  }
-
-  async function renderOptionsBtn() {
-    const optionsBtn = document.createElement('button');
-    optionsBtn.id = 'optionsBtn';
-    const cogIcon = await renderSvg('src/icons/MdiCog.svg');
-    optionsBtn.append(cogIcon);
-
-    optionsBtn.onclick = async () => {
-      const openingExplorer = document.getElementById(openingExplorerId)!;
-      openingExplorer.dataset.isOptionsOpen = openingExplorer.dataset.isOptionsOpen === 'true' ? 'false' : 'true';
-      fetchAndRender();
-    };
-
-    return optionsBtn;
-  }
-
-  const header = document.createElement('div');
-
-  header.style = /* style */`
-    display: flex;
-    justify-content: space-between;
-  `;
-
-  header.append(await renderTabs(), await renderOptionsBtn());
-
-  return header;
-}
-
-async function renderOpeningExplorer(res: Response) {
+export async function renderOpeningExplorer() {
   const existingOpeningExplorer = document.getElementById(openingExplorerId);
 
   if (existingOpeningExplorer) {
-    // if there is openingExplorer in the DOM, update table & tabs only
+    // re-render each child separately, not the whole div to avoid flashing
     const header = existingOpeningExplorer.firstElementChild!;
     header.insertAdjacentElement('beforebegin', await renderHeader());
     header.remove();
-    const scrollContainerOrOptions = existingOpeningExplorer.querySelector(`#${scrollContainerId}, #${optionsId}`)!;
-    scrollContainerOrOptions.insertAdjacentElement('beforebegin', await renderContentOrOptions(res));
-    scrollContainerOrOptions.remove();
+
+    const contentOrOptions = existingOpeningExplorer.querySelector(`#${contentId}, #${optionsId}`)!;
+    contentOrOptions.insertAdjacentElement('beforebegin', isOptionsOpen() ? await renderOptions() : await renderContent());
+    contentOrOptions.remove();
 
     return;
   }
@@ -598,16 +597,8 @@ async function renderOpeningExplorer(res: Response) {
   const openingExplorer = document.createElement('div');
   openingExplorer.id = openingExplorerId;
   openingExplorer.dataset.isOptionsOpen = 'false';
-  openingExplorer.append(await renderHeader(), renderContent(res));
+  openingExplorer.append(await renderHeader(), await renderContent());
   parent.prepend(openingExplorer);
-}
-
-export async function fetchAndRender() {
-  const analysisViewLines = document.querySelector('.analysis-view-lines')!;
-  const fen = analysisViewLines.getAttribute('fen')!;
-  // const noGameFen = 'r1bqkbnr/pppp1pp1/n3p2p/8/4P3/N1P4P/PP1P1PP1/R1BQKBNR b KQkq - 2 4';
-  const res = await fetchLichess(fen);
-  renderOpeningExplorer(res);
 }
 
 export const openingExplorerRegex = /chess.com\/analysis/;
