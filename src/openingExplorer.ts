@@ -609,3 +609,5 @@ export async function fetchAndRender() {
   const res = await fetchLichess(fen);
   renderOpeningExplorer(res);
 }
+
+export const openingExplorerRegex = /chess.com\/analysis/;

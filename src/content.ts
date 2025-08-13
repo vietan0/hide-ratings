@@ -1,83 +1,10 @@
-import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
-import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
-import { fetchAndRender, isOptionsOpen, openingExplorerId } from './openingExplorer';
+import { fetchAndRender, isOptionsOpen, openingExplorerId, openingExplorerRegex } from './openingExplorer';
 import { type ExtStorage, isFeatureId } from './storageTypes';
+import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
 
 let port: browser.runtime.Port;
-
-function usernameFail() {
-  const currentUsername = document.getElementById('notifications-request')!.getAttribute('username')!;
-  const usernameDivs = Array.from(document.querySelectorAll<HTMLDivElement>('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
-  const usernamesInPage = usernameDivs.map(x => x.textContent!.toLowerCase());
-  const bothUsernamesLoaded = !usernamesInPage.includes('opponent');
-  const currentUserPlaying = usernamesInPage.includes(currentUsername.toLowerCase());
-
-  if (!bothUsernamesLoaded || !currentUserPlaying) {
-    return { cond: false, reason: 'username' } as const;
-  }
-}
-
-function hideOpponentInEffect() {
-  const placeholderImg = document.getElementById(placeholderImgId);
-  const placeholderUsernameDiv = document.getElementById(placeholderUsername);
-
-  return Boolean(placeholderImg || placeholderUsernameDiv);
-}
-
-// details: https://regexr.com/8gcck
-const hideOpponentRegex = /chess.com\/(?:game\/(?:live|daily\/)?\d+$|play\/online\/new)/;
-const openingExplorerRegex = /chess.com\/analysis/;
-
-/**
- * - This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
- * - This function doesn't check if hideOpponent code is already in effect (avatar & username replaced)
- * - If return `{ cond: true }`, proceed to hide opponent.
- * - If return `{ cond: false, reason: string }`, unhide/do nothing depends on the case.
- * @returns whether all conditions to invoke `startHideOpponent()` are met.
- */
-function checkHideOpponentConds() {
-  // 1. url condition
-  // 2. username-related conditions
-  // 3. game over-related conditions
-  if (!window.location.href.match(hideOpponentRegex))
-    return { cond: false, reason: 'url' } as const;
-
-  return usernameFail() || isGameOver() || { cond: true };
-}
-
-function startHideOpponent() {
-  port.postMessage({ command: 'hideOpponent' });
-  overrideImg();
-  overrideUsername();
-}
-
-function stopHideOpponent() {
-  port.postMessage({ command: 'unhideOpponent' });
-  restoreImg();
-  restoreUsername();
-}
-
-/**
- * Run:
- * 1. When port first connects
- * 2. In mutation observer
- */
-async function hideOrUnhide() {
-  if (hideOpponentInEffect() && isGameOver()) {
-    stopHideOpponent();
-  }
-  else {
-    const { hideOpponent } = await browser.storage.local.get() as ExtStorage;
-
-    if (hideOpponent) {
-      if (checkHideOpponentConds().cond) {
-        startHideOpponent();
-      }
-    }
-  }
-}
 
 const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
   const topUserBlock = document.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
@@ -92,15 +19,20 @@ const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
   );
 
   if (focusModeWasToggled) {
-    hideOrUnhide();
+    hideOrUnhide(port);
   }
 
   else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
-    hideOrUnhide();
+    hideOrUnhide(port);
   }
 });
 
 const boardObserver = new MutationObserver(() => isGameOver() ? addBtnToPlaces(port) : removeAllBtns());
+
+function observeForAnalyzeOnLichess() {
+  boardObserver.observe(document.getElementById('board-layout-main')!, { subtree: true, childList: true });
+  boardObserver.observe(document.getElementById('board-layout-sidebar')!, { subtree: true, childList: true });
+}
 
 const analysisViewLinesObserver = new MutationObserver(() => {
   if (!isOptionsOpen())
@@ -146,11 +78,6 @@ const sidebarObserver = new MutationObserver(async (mutationList) => {
   }
 });
 
-function observeForAnalyzeOnLichess() {
-  boardObserver.observe(document.getElementById('board-layout-main')!, { subtree: true, childList: true });
-  boardObserver.observe(document.getElementById('board-layout-sidebar')!, { subtree: true, childList: true });
-}
-
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
   const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess, openingExplorer } = await browser.storage.local.get() as ExtStorage;
@@ -164,7 +91,7 @@ async function connectToBackground() {
     const topPlayerComp = document.querySelector('.player-component.player-top');
 
     if (topPlayerComp) {
-      hideOrUnhide();
+      hideOrUnhide(port);
 
       topPlayerCompObserver.observe(topPlayerComp, {
         subtree: true,
@@ -235,12 +162,12 @@ browser.storage.local.onChanged.addListener(async (changes) => {
           });
 
           if (checkHideOpponentConds().cond) {
-            startHideOpponent();
+            startHideOpponent(port);
           }
         }
       }
       else {
-        stopHideOpponent();
+        stopHideOpponent(port);
         topPlayerCompObserver.disconnect();
       }
     }
