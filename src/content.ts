@@ -107,6 +107,45 @@ const analysisViewLinesObserver = new MutationObserver(() => {
     fetchAndRender();
 });
 
+function startOpeningExplorer() {
+  const analysisViewLines = document.querySelector('.analysis-view-lines');
+
+  if (!analysisViewLines)
+    return;
+
+  port.postMessage({ command: 'openingExplorer' });
+  fetchAndRender();
+  analysisViewLinesObserver.observe(analysisViewLines, { attributes: true, attributeFilter: ['fen'] });
+}
+
+const sidebarObserver = new MutationObserver(async (mutationList) => {
+  // only startOpeningExplorer when either:
+  // 1. .analysis-view-lines is added
+  // 2. .analysis-view-component is added and it has .analysis-view-lines inside
+  const analysisViewLinesAdded = mutationList.some((mutation) => {
+    if (mutation.addedNodes.length === 1
+      && mutation.addedNodes.item(0)!.nodeType === 1
+      && mutation.addedNodes.item(0)!.nodeName === 'DIV'
+    ) {
+      const addedDiv = mutation.addedNodes.item(0) as HTMLDivElement;
+      if (addedDiv.classList.contains('analysis-view-lines'))
+        return true;
+
+      if (addedDiv.classList.contains('analysis-view-component')
+        && Array.from(addedDiv.children).some(div => div.classList.contains('analysis-view-lines'))
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  if (analysisViewLinesAdded) {
+    startOpeningExplorer();
+  }
+});
+
 function observeForAnalyzeOnLichess() {
   boardObserver.observe(document.getElementById('board-layout-main')!, { subtree: true, childList: true });
   boardObserver.observe(document.getElementById('board-layout-sidebar')!, { subtree: true, childList: true });
@@ -153,28 +192,13 @@ async function connectToBackground() {
 
   if (openingExplorer) {
     if (window.location.href.match(openingExplorerRegex)) {
-      const bodyObserver = new MutationObserver(async () => {
-        const analysisViewLines = document.querySelector('.analysis-view-lines');
-
-        if (analysisViewLines) {
-          port.postMessage({ command: 'openingExplorer' });
-          fetchAndRender();
-          analysisViewLinesObserver.observe(analysisViewLines, { attributes: true, attributeFilter: ['fen'] });
-          bodyObserver.disconnect();
-        }
-      });
+      sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
 
       if (document.getElementById(openingExplorerId)) {
         // when content script re-loaded, but already injected
         // needed in dev
-        port.postMessage({ command: 'openingExplorer' });
-        fetchAndRender();
-        analysisViewLinesObserver.observe(document.querySelector('.analysis-view-lines')!, { attributes: true, attributeFilter: ['fen'] });
-
-        return;
+        startOpeningExplorer();
       }
-
-      bodyObserver.observe(document.body, { childList: true, subtree: true });
     }
   }
 
@@ -240,13 +264,14 @@ browser.storage.local.onChanged.addListener(async (changes) => {
     if (changedKey === 'openingExplorer') {
       if (newValue) {
         if (window.location.href.match(openingExplorerRegex)) {
-          fetchAndRender();
-          const analysisViewLines = document.querySelector('.analysis-view-lines')!;
-          analysisViewLinesObserver.observe(analysisViewLines, { attributes: true, attributeFilter: ['fen'] });
+          startOpeningExplorer();
+          sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
         }
       }
       else {
+        port.postMessage({ command: 'hideOpeningExplorer' });
         document.getElementById(openingExplorerId)?.remove();
+        sidebarObserver.disconnect();
         analysisViewLinesObserver.disconnect();
       }
     }
