@@ -21,6 +21,14 @@ export default [
     plugins: [typescript()],
   },
   {
+    input: 'src/move.ts',
+    output: {
+      file: 'dist/move.js',
+      sourcemap: true,
+    },
+    plugins: [typescript()],
+  },
+  {
     input: 'src/background.ts',
     output: {
       file: 'dist/background.js',

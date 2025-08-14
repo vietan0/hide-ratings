@@ -8,6 +8,22 @@
   border-collapse: collapse;
 }
 
+#openingExplorer table tr {
+  height: 28px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+#openingExplorer table tr.totalRow {
+  font-weight: 700;
+  cursor: initial;
+  user-select: none;
+}
+
+#openingExplorer table tr:not(.totalRow):hover {
+  background-color: var(--color-bg-subtler);
+}
+
 /* sanCell */
 #openingExplorer table td:nth-child(1) {
   padding-inline-start: 1rem;

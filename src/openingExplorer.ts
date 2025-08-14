@@ -197,11 +197,15 @@ async function renderContent() {
 
       const moveRow = document.createElement('tr');
 
-      moveRow.style = /* style */`
-        font-weight: ${isTotalRow ? 700 : 400};
-        height: 28px; 
-        vertical-align: middle;
-      `;
+      if (isTotalRow) {
+        moveRow.classList.add('totalRow');
+      }
+      else {
+        moveRow.onclick = async () => {
+          const sendUciEvent = new CustomEvent('sendUci', { detail: move.uci });
+          document.dispatchEvent(sendUciEvent);
+        };
+      }
 
       const moveTotal = move.white + move.draws + move.black;
       const sanCell = document.createElement('td');
@@ -591,6 +595,18 @@ export async function renderOpeningExplorer() {
     contentOrOptions.remove();
 
     return;
+  }
+
+  /*
+    - Content script can't directly play moves on the board (world: 'ISOLATED')
+    - So create a script in world: 'MAIN' to interact with
+   */
+  const injectedMoveScript = document.body.querySelector('script[src$="dist/move.js"]');
+
+  if (!injectedMoveScript) {
+    const moveScript = document.createElement('script');
+    moveScript.src = browser.runtime.getURL('dist/move.js');
+    document.body.append(moveScript);
   }
 
   const parent = document.querySelector('.analysis-view-component')!;
