@@ -53,7 +53,9 @@ function startOpeningExplorer() {
 const sidebarObserver = new MutationObserver(async (mutationList) => {
   // only startOpeningExplorer when either:
   // 1. .analysis-view-lines is added
-  // 2. .analysis-view-component is added and it has .analysis-view-lines inside
+  // 2. .analysis-view-component is added and it has .analysis-view-lines inside (switching tab from Explorer to Analysis)
+  // 3. .sidebar-tab-content-component is added and it has .analysis-view-component inside (swiching tab from Review to Analysis)
+
   const analysisViewLinesAdded = mutationList.some((mutation) => {
     if (mutation.addedNodes.length === 1
       && mutation.addedNodes.item(0)!.nodeType === 1
@@ -65,6 +67,12 @@ const sidebarObserver = new MutationObserver(async (mutationList) => {
 
       if (addedDiv.classList.contains('analysis-view-component')
         && Array.from(addedDiv.children).some(div => div.classList.contains('analysis-view-lines'))
+      ) {
+        return true;
+      }
+
+      if (addedDiv.classList.contains('sidebar-tab-content-component')
+        && Array.from(addedDiv.children).some(div => div.classList.contains('analysis-view-component'))
       ) {
         return true;
       }

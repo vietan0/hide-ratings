@@ -4,6 +4,11 @@
   border-bottom: 0.1rem solid var(--color-border-default);
 }
 
+#openingExplorer > #header {
+  display: flex;
+  justify-content: space-between;
+}
+
 #openingExplorer table {
   border-collapse: collapse;
 }

@@ -31,6 +31,7 @@ interface Response {
 export const openingExplorerId = 'openingExplorer';
 export const contentId = 'content';
 const optionsId = 'options';
+const headerId = 'header';
 const cache = new Map<string, Response>();
 
 export function isOptionsOpen() {
@@ -83,12 +84,7 @@ async function renderHeader() {
   }
 
   const header = document.createElement('div');
-
-  header.style = /* style */`
-    display: flex;
-    justify-content: space-between;
-  `;
-
+  header.id = headerId;
   header.append(await renderTabs(), await renderOptionsBtn());
 
   return header;
@@ -120,18 +116,19 @@ async function renderContent() {
 
     // set loading state before calling await fetch()
     const overlay = document.createElement('div');
-    overlay.className = 'overlay';
+    const overlayClass = 'overlay';
+    overlay.className = overlayClass;
     const openingExplorer = document.getElementById(openingExplorerId);
 
-    if (openingExplorer) {
-      openingExplorer!.append(overlay);
+    if (openingExplorer && document.getElementsByClassName(overlayClass).length === 0) {
+      openingExplorer.append(overlay);
     }
 
     const response = await fetch(url)
       .then(r => r.json())
       .catch(err => console.error('There has been an error fetching from Lichess', err)) as Response;
 
-    for (const div of document.getElementsByClassName('overlay')) {
+    for (const div of document.getElementsByClassName(overlayClass)) {
       div.remove();
     }
 
@@ -586,13 +583,18 @@ export async function renderOpeningExplorer() {
 
   if (existingOpeningExplorer) {
     // re-render each child separately, not the whole div to avoid flashing
-    const header = existingOpeningExplorer.firstElementChild!;
-    header.insertAdjacentElement('beforebegin', await renderHeader());
-    header.remove();
-
+    const header = existingOpeningExplorer.querySelector(`#${headerId}`);
     const contentOrOptions = existingOpeningExplorer.querySelector(`#${contentId}, #${optionsId}`)!;
-    contentOrOptions.insertAdjacentElement('beforebegin', isOptionsOpen() ? await renderOptions() : await renderContent());
-    contentOrOptions.remove();
+
+    if (header) {
+      header.insertAdjacentElement('beforebegin', await renderHeader());
+      header.remove();
+    }
+
+    if (contentOrOptions) {
+      contentOrOptions.insertAdjacentElement('beforebegin', isOptionsOpen() ? await renderOptions() : await renderContent());
+      contentOrOptions.remove();
+    }
 
     return;
   }
@@ -613,8 +615,8 @@ export async function renderOpeningExplorer() {
   const openingExplorer = document.createElement('div');
   openingExplorer.id = openingExplorerId;
   openingExplorer.dataset.isOptionsOpen = 'false';
-  openingExplorer.append(await renderHeader(), await renderContent());
   parent.prepend(openingExplorer);
+  openingExplorer.append(await renderHeader(), await renderContent());
 }
 
 export const openingExplorerRegex = /chess.com\/analysis/;
