@@ -21,9 +21,9 @@ export default [
     plugins: [typescript()],
   },
   {
-    input: 'src/move.ts',
+    input: 'src/mainWorldScript.ts',
     output: {
-      file: 'dist/move.js',
+      file: 'dist/mainWorldScript.js',
       sourcemap: true,
     },
     plugins: [typescript()],

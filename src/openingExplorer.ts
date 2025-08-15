@@ -617,14 +617,14 @@ export async function renderOpeningExplorer() {
   /*
     - Content script can't directly play moves on the board (world: 'ISOLATED')
     - So create a script in world: 'MAIN' to interact with
-    - Here it's only injected on first render, not re-renders or code save
+    - Here it's only injected on first render, not re-renders or file save
    */
-  const injectedMoveScript = document.body.querySelector('script[src$="dist/move.js"]');
+  const mainWorldScriptInjected = document.body.querySelector('script[src$="dist/mainWorldScript.js"]');
 
-  if (!injectedMoveScript) {
-    const moveScript = document.createElement('script');
-    moveScript.src = browser.runtime.getURL('dist/move.js');
-    document.body.append(moveScript);
+  if (!mainWorldScriptInjected) {
+    const mainWorldScript = document.createElement('script');
+    mainWorldScript.src = browser.runtime.getURL('dist/mainWorldScript.js');
+    document.body.append(mainWorldScript);
   }
 
   const parent = document.querySelector('.analysis-view-component')!;
