@@ -7,6 +7,7 @@
 
 export interface WCChessBoard extends HTMLElement {
   game: {
+    getFEN: () => string;
     move: (moveInfo: {
       from: string;
       to: string;

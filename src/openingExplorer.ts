@@ -33,6 +33,7 @@ export const contentId = 'content';
 const optionsId = 'options';
 const headerId = 'header';
 const cache = new Map<string, Response>();
+let fen = '';
 
 export function isOptionsOpen() {
   const openingExplorer = document.getElementById(openingExplorerId);
@@ -199,8 +200,8 @@ async function renderContent() {
       }
       else {
         moveRow.onclick = async () => {
-          const sendUciEvent = new CustomEvent('sendUci', { detail: move.uci });
-          document.dispatchEvent(sendUciEvent);
+          document.dispatchEvent(new CustomEvent('sendUci', { detail: move.uci }));
+          document.dispatchEvent(new CustomEvent('requestFen'));
         };
       }
 
@@ -271,8 +272,7 @@ async function renderContent() {
     return p;
   }
 
-  const analysisViewLines = document.querySelector('.analysis-view-lines')!;
-  const fen = analysisViewLines.getAttribute('fen')!;
+  document.dispatchEvent(new CustomEvent('requestFen'));
   const res = await fetchLichess(fen);
   const content = document.createElement('div');
   content.id = contentId;
@@ -579,6 +579,21 @@ async function renderOptions() {
 }
 
 export async function renderOpeningExplorer() {
+  /*
+  - doesn't add listener on normal rerender (because flag stays true)
+  - still add listener on file save (because flag resets to undefined)
+  */
+  const myDoc = document as Document & { responseFenListenerAdded: boolean | undefined };
+
+  if (!myDoc.responseFenListenerAdded) {
+    document.addEventListener('responseFen', (e) => {
+      const responseFenEvent = e as CustomEvent<string>;
+      fen = responseFenEvent.detail;
+    });
+
+    myDoc.responseFenListenerAdded = true;
+  }
+
   const existingOpeningExplorer = document.getElementById(openingExplorerId);
 
   if (existingOpeningExplorer) {
@@ -602,6 +617,7 @@ export async function renderOpeningExplorer() {
   /*
     - Content script can't directly play moves on the board (world: 'ISOLATED')
     - So create a script in world: 'MAIN' to interact with
+    - Here it's only injected on first render, not re-renders or code save
    */
   const injectedMoveScript = document.body.querySelector('script[src$="dist/move.js"]');
 

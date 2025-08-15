@@ -1,6 +1,6 @@
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
-import { isOptionsOpen, openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
+import { openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
 import { type ExtStorage, isFeatureId } from './storageTypes';
 import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
 
@@ -27,47 +27,93 @@ const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
   }
 });
 
-const boardObserver = new MutationObserver(() => isGameOver() ? addBtnToPlaces(port) : removeAllBtns());
+const layoutObserver = new MutationObserver(() => isGameOver() ? addBtnToPlaces(port) : removeAllBtns());
 
 function observeForAnalyzeOnLichess() {
-  boardObserver.observe(document.getElementById('board-layout-main')!, { subtree: true, childList: true });
-  boardObserver.observe(document.getElementById('board-layout-sidebar')!, { subtree: true, childList: true });
+  layoutObserver.observe(document.getElementById('board-layout-main')!, { subtree: true, childList: true });
+  layoutObserver.observe(document.getElementById('board-layout-sidebar')!, { subtree: true, childList: true });
 }
 
-const analysisViewLinesObserver = new MutationObserver(() => {
-  if (!isOptionsOpen())
+const wcBoardObserver = new MutationObserver((mutationList) => {
+  // if not in analysis tab, return early
+  if (!document.querySelector('.analysis-view-component')) {
+    return;
+  }
+
+  // filter out mutations
+  const oneOrMorePiecesMoved = mutationList.some((mutation) => {
+    if (mutation.target.nodeName === 'DIV') {
+      // confirm a div
+      const div = mutation.target as HTMLDivElement;
+
+      if (div.classList.contains('piece')) {
+        // confirm a piece
+
+        if (!div.classList.contains('dragging')) {
+          // confirm not a start-dragging mutation
+          if (!mutation.oldValue)
+            return false; // invalid oldValue
+
+          const squareRegex = /(?<=square-)\d{2}/;
+          const oldSquare = mutation.oldValue.match(squareRegex)![0];
+          const newSquare = div.className.match(squareRegex)![0];
+
+          if (oldSquare !== newSquare) {
+            // confirm a piece moved (could be different piece due to line jumping)
+            return true;
+          }
+
+          return false;
+        }
+
+        return false;
+      }
+
+      return false;
+    }
+
+    return false;
+  });
+
+  if (oneOrMorePiecesMoved) {
     renderOpeningExplorer();
+  }
 });
 
 function startOpeningExplorer() {
-  const analysisViewLines = document.querySelector('.analysis-view-lines');
+  const analysisViewComp = document.querySelector('.analysis-view-component');
+  if (!analysisViewComp)
+    return;
 
-  if (!analysisViewLines)
+  const wcBoard = document.getElementById('board-analysis-board');
+  if (!wcBoard)
     return;
 
   port.postMessage({ command: 'openingExplorer' });
   renderOpeningExplorer();
-  analysisViewLinesObserver.observe(analysisViewLines, { attributes: true, attributeFilter: ['fen'] });
+
+  // observe() called multiple times doesnt duplicate the observer, so it's fine
+  wcBoardObserver.observe(wcBoard, {
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class'],
+    attributeOldValue: true,
+  });
 }
 
 const sidebarObserver = new MutationObserver(async (mutationList) => {
-  // only startOpeningExplorer when either:
-  // 1. .analysis-view-lines is added
-  // 2. .analysis-view-component is added and it has .analysis-view-lines inside (switching tab from Explorer to Analysis)
-  // 3. .sidebar-tab-content-component is added and it has .analysis-view-component inside (swiching tab from Review to Analysis)
+  // call startOpeningExplorer() when .analysis-view-component is subsequently added to DOM
+  // (first-render case is handled by startOpeningExplorer itself)
+  // 1. .analysis-view-component is added
+  // 2. .sidebar-tab-content-component is added and it has .analysis-view-component inside (swiching tab from Review to Analysis)
 
-  const analysisViewLinesAdded = mutationList.some((mutation) => {
+  const analysisViewCompAdded = mutationList.some((mutation) => {
     if (mutation.addedNodes.length === 1
-      && mutation.addedNodes.item(0)!.nodeType === 1
       && mutation.addedNodes.item(0)!.nodeName === 'DIV'
     ) {
       const addedDiv = mutation.addedNodes.item(0) as HTMLDivElement;
-      if (addedDiv.classList.contains('analysis-view-lines'))
-        return true;
 
-      if (addedDiv.classList.contains('analysis-view-component')
-        && Array.from(addedDiv.children).some(div => div.classList.contains('analysis-view-lines'))
-      ) {
+      if (addedDiv.classList.contains('analysis-view-component')) {
         return true;
       }
 
@@ -81,7 +127,7 @@ const sidebarObserver = new MutationObserver(async (mutationList) => {
     return false;
   });
 
-  if (analysisViewLinesAdded) {
+  if (analysisViewCompAdded) {
     startOpeningExplorer();
   }
 });
@@ -126,14 +172,12 @@ async function connectToBackground() {
   }
 
   if (openingExplorer) {
+    // reminder: code in content script will be invoked every time file is saved in dev mode
     if (window.location.href.match(openingExplorerRegex)) {
+      // 1. check for first appearance (observer can't catch)
+      startOpeningExplorer();
+      // 2. observing for subsequent appearances
       sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
-
-      if (document.getElementById(openingExplorerId)) {
-        // when content script re-loaded, but already injected
-        // needed in dev
-        startOpeningExplorer();
-      }
     }
   }
 
@@ -192,7 +236,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
       }
       else {
         removeAllBtns();
-        boardObserver.disconnect();
+        layoutObserver.disconnect();
       }
     }
 
@@ -207,7 +251,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
         port.postMessage({ command: 'hideOpeningExplorer' });
         document.getElementById(openingExplorerId)?.remove();
         sidebarObserver.disconnect();
-        analysisViewLinesObserver.disconnect();
+        wcBoardObserver.disconnect();
       }
     }
   }
