@@ -203,6 +203,14 @@ async function renderContent() {
           document.dispatchEvent(new CustomEvent('sendUci', { detail: move.uci }));
           document.dispatchEvent(new CustomEvent('requestFen'));
         };
+
+        moveRow.onmouseenter = () => {
+          document.dispatchEvent(new CustomEvent('addArrow', { detail: move.uci }));
+        };
+
+        moveRow.onmouseleave = () => {
+          document.dispatchEvent(new CustomEvent('removeArrow', { detail: move.uci }));
+        };
       }
 
       const moveTotal = move.white + move.draws + move.black;
@@ -573,20 +581,22 @@ export async function renderOpeningExplorer() {
   - doesn't add listener on normal rerender (because flag stays true)
   - still add listener on file save (because flag resets to undefined)
   */
-  const myDoc = document as Document & { responseFenListenerAdded: boolean | undefined };
 
-  if (!myDoc.responseFenListenerAdded) {
+  if (!document.ccTweaks_responseFenListenerAdded) {
     document.addEventListener('responseFen', (e) => {
       const responseFenEvent = e as CustomEvent<string>;
       fen = responseFenEvent.detail;
     });
 
-    myDoc.responseFenListenerAdded = true;
+    document.ccTweaks_responseFenListenerAdded = true;
   }
 
   const existingOpeningExplorer = document.getElementById(openingExplorerId);
 
   if (existingOpeningExplorer) {
+    // remove all arrows on re-render,
+    // since moveRow's mouseleave won't fire if moveRow is removed from DOM
+    document.dispatchEvent(new CustomEvent('removeAllArrows'));
     // re-render each child separately, not the whole div to avoid flashing
     const header = existingOpeningExplorer.querySelector(`#${headerId}`);
     const contentOrOptions = existingOpeningExplorer.querySelector(`#${contentId}, #${optionsId}`)!;
