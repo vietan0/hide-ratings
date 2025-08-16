@@ -207,8 +207,8 @@ async function renderContent() {
 
       const moveTotal = move.white + move.draws + move.black;
       const sanCell = document.createElement('td');
-
       sanCell.textContent = move.san;
+
       const percCell = document.createElement('td');
       const perc = Math.round(moveTotal * 100 / total);
       percCell.textContent = `${perc}%`;
@@ -223,36 +223,26 @@ async function renderContent() {
     }
 
     const table = document.createElement('table');
-
-    table.innerHTML = /* html */`
-    <colgroup>
-      <col style="width: 40px">
-      <col style="width: 30px">
-      <col style="width: 1%">
-      <col>
-    </colgroup>
-  `;
-
-    const thead = document.createElement('thead');
     const tbody = document.createElement('tbody');
-    const tfoot = document.createElement('tfoot');
     const total = res.white + res.draws + res.black;
     const moveRows = res.moves.map(move => renderMoveRow(move, total));
-
-    const totalRow = renderMoveRow({
-      averageRating: 0,
-      white: res.white,
-      draws: res.draws,
-      black: res.black,
-      game: null,
-      opening: null,
-      san: 'Σ',
-      uci: 'Σ',
-    }, total, true);
-
+    table.append(tbody);
     tbody.append(...moveRows);
-    tfoot.append(totalRow);
-    table.append(thead, tbody, tfoot);
+
+    if (res.moves.length > 1) {
+      const totalRow = renderMoveRow({
+        averageRating: 0,
+        white: res.white,
+        draws: res.draws,
+        black: res.black,
+        game: null,
+        opening: null,
+        san: 'Σ',
+        uci: 'Σ',
+      }, total, true);
+
+      tbody.append(totalRow);
+    }
 
     return table;
   }

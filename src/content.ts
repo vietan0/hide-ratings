@@ -51,11 +51,8 @@ const wcBoardObserver = new MutationObserver((mutationList) => {
 
         if (!div.classList.contains('dragging')) {
           // confirm not a start-dragging mutation
-          if (!mutation.oldValue)
-            return false; // invalid oldValue
-
           const squareRegex = /(?<=square-)\d{2}/;
-          const oldSquare = mutation.oldValue.match(squareRegex)![0];
+          const oldSquare = mutation.oldValue && mutation.oldValue.match(squareRegex) ? mutation.oldValue.match(squareRegex)![0] : null;
           const newSquare = div.className.match(squareRegex)![0];
 
           if (oldSquare !== newSquare) {
