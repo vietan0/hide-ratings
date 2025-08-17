@@ -1,7 +1,6 @@
-import type { KeyPressed, WCChessBoard } from './wcChessBoardTypes';
+import { type WCChessBoard, ccTweaksTag } from './wcChessBoardTypes';
 
-const greenKey: KeyPressed = 'shift';
-document.ccTweaks_arrowKeys = [];
+const color = '#a09bfa';
 
 function getBoard() {
   return document.getElementById('board-analysis-board') as WCChessBoard;
@@ -31,25 +30,12 @@ document.addEventListener('addArrow', (e) => {
   const from = uci.slice(0, 2);
   const to = uci.slice(2, 4);
   const wcChessBoard = getBoard();
-  const allMarkings = wcChessBoard.game.markings.getAll();
 
-  const existingArrow = allMarkings.find(marking =>
-    marking.type === 'arrow'
-    && marking.data.from === from
-    && marking.data.to === to
-    && marking.data.keyPressed === greenKey,
-  );
-
-  if (!existingArrow) {
-    const key = wcChessBoard.game.markings.toggleOne({
-      data: { from, to, keyPressed: greenKey },
-      type: 'arrow',
-    });
-
-    if (typeof key === 'string') {
-      document.ccTweaks_arrowKeys!.push(key);
-    }
-  }
+  wcChessBoard.game.markings.toggleOne({
+    data: { from, to, color },
+    type: 'arrow',
+    tags: [ccTweaksTag],
+  });
 });
 
 document.addEventListener('removeArrow', (e) => {
@@ -58,33 +44,31 @@ document.addEventListener('removeArrow', (e) => {
   const from = uci.slice(0, 2);
   const to = uci.slice(2, 4);
   const wcChessBoard = getBoard();
-  const allMarkings = wcChessBoard.game.markings.getAll();
 
-  const existingArrow = allMarkings.find(marking =>
-    marking.type === 'arrow'
-    && marking.data.from === from
-    && marking.data.to === to
-    && marking.data.keyPressed === greenKey,
-  );
+  const allCCTweaksArrows = wcChessBoard.game.markings.getAllWhere({
+    tags: [ccTweaksTag],
+  });
 
-  if (existingArrow) {
+  /*
+    When clicking a row (state: on):
+      1. openingExplorer rerenders which triggers 'removeAllArrow' -> (state: off),
+      2. then mouseleave event triggers 'removeArrow' -> (state: on)
+      -> 'removeArrow' would mistakenly turn on an arrow that's has been removed by 'removeAllArrow'
+    That's why a condition is needed:
+   */
+  if (allCCTweaksArrows.find(arrow => arrow.key.includes(uci))) {
     wcChessBoard.game.markings.toggleOne({
-      data: { from, to, keyPressed: greenKey },
+      data: { from, to, color },
       type: 'arrow',
+      tags: [ccTweaksTag],
     });
-
-    const indexToRemove = document.ccTweaks_arrowKeys!.findIndex(str => str === existingArrow.key);
-    document.ccTweaks_arrowKeys!.splice(indexToRemove, 1);
   }
 });
 
 document.addEventListener('removeAllArrows', () => {
   const wcChessBoard = getBoard();
 
-  // workaround solution because the signature of removeMany, removeAllWhere or toggleMany is unknown
-  for (const key of document.ccTweaks_arrowKeys!) {
-    wcChessBoard.game.markings.removeOne(key);
-  }
-
-  document.ccTweaks_arrowKeys = [];
+  wcChessBoard.game.markings.removeAllWhere({
+    tags: [ccTweaksTag],
+  });
 });
