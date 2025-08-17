@@ -1,28 +1,70 @@
-const featureIds = ['hideRatings', 'hideOpponent', 'hideFlags', 'hideOwnFlagOnHome', 'analyzeOnLichess', 'openingExplorer'] as const;
+import * as z from 'zod';
 
-export type FeatureId = typeof featureIds[number];
+const featureIdZ = z.union([
+  z.literal('hideRatings'),
+  z.literal('hideOpponent'),
+  z.literal('hideFlags'),
+  z.literal('hideOwnFlagOnHome'),
+  z.literal('analyzeOnLichess'),
+  z.literal('openingExplorer'),
+]);
+
+export type FeatureId = z.infer<typeof featureIdZ>;
 
 export function isFeatureId(key: string): key is FeatureId {
-  return (featureIds as readonly string[]).includes(key);
+  return featureIdZ.safeParse(key).success;
 }
 
-export type FeatureStorage = Record<FeatureId, boolean>;
-export const timeControls = ['ultraBullet', 'bullet', 'blitz', 'rapid', 'classical', 'correspondence'] as const;
-export type TimeControl = typeof timeControls[number];
-export const ratings = [400, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500] as const;
-export type Rating = typeof ratings[number];
-export interface ExtStorage extends FeatureStorage {
-  database: 'lichess' | 'masters';
-  databaseOptions: {
-    lichess: {
-      speeds: TimeControl[];
-      ratings: Rating[];
-      since: string | undefined;
-      until: string | undefined;
-    };
-    masters: {
-      since: number | undefined;
-      until: number | undefined;
-    };
-  };
-}
+const featureStorageZ = z.object({
+  hideRatings: z.boolean(),
+  hideOpponent: z.boolean(),
+  hideFlags: z.boolean(),
+  hideOwnFlagOnHome: z.boolean(),
+  analyzeOnLichess: z.boolean(),
+  openingExplorer: z.boolean(),
+});
+
+export type FeatureStorage = z.infer<typeof featureStorageZ>;
+
+const ratingZ = z.union([
+  z.literal(400),
+  z.literal(1000),
+  z.literal(1200),
+  z.literal(1400),
+  z.literal(1600),
+  z.literal(1800),
+  z.literal(2000),
+  z.literal(2200),
+  z.literal(2500),
+]);
+
+export const ratings = ratingZ.options.map(option => option.value);
+export type Rating = z.infer<typeof ratingZ>;
+
+const timeControlZ = z.union([
+  z.literal('ultraBullet'),
+  z.literal('bullet'),
+  z.literal('blitz'),
+  z.literal('rapid'),
+  z.literal('classical'),
+  z.literal('correspondence'),
+]);
+
+export const timeControls = timeControlZ.options.map(option => option.value);
+export type TimeControl = z.infer<typeof timeControlZ>;
+export const extStorageZ = featureStorageZ.extend({
+  database: z.union([z.literal('lichess'), z.literal('masters')]),
+  databaseOptions: z.object({
+    lichess: z.object({
+      speeds: z.array(timeControlZ),
+      ratings: z.array(ratingZ),
+      since: z.union([z.string(), z.undefined()]),
+      until: z.union([z.string(), z.undefined()]),
+    }),
+    masters: z.object({
+      since: z.union([z.number(), z.undefined()]),
+      until: z.union([z.number(), z.undefined()]),
+    }),
+  }),
+});
+export type ExtStorage = z.infer<typeof extStorageZ>;

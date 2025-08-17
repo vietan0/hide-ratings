@@ -10,7 +10,7 @@ export default [
       file: 'dist/content.js',
       sourcemap: true,
     },
-    plugins: [typescript()],
+    plugins: [typescript(), nodeResolve()],
   },
   {
     input: 'src/lichessContent.ts',
@@ -34,7 +34,7 @@ export default [
       file: 'dist/background.js',
       sourcemap: true,
     },
-    plugins: [typescript()],
+    plugins: [typescript(), nodeResolve()],
   },
   {
     input: 'src/popup/index.ts',
@@ -42,7 +42,7 @@ export default [
       file: 'dist/popup.js',
       sourcemap: true,
     },
-    plugins: [typescript()],
+    plugins: [typescript(), nodeResolve()],
   },
   {
     input: 'sign.ts',

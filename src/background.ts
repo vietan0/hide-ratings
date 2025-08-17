@@ -1,37 +1,51 @@
-import { type ExtStorage, isFeatureId } from './storageTypes';
+import { type ExtStorage, extStorageZ, isFeatureId } from './storageTypes';
 
-async function initiateStorage() {
-  // initiate storage after first install
-  const storage = await browser.storage.local.get();
+const initialStorage: ExtStorage = {
+  hideRatings: false,
+  hideOpponent: false,
+  hideFlags: false,
+  hideOwnFlagOnHome: false,
+  analyzeOnLichess: false,
+  openingExplorer: false,
+  database: 'lichess',
+  databaseOptions: {
+    lichess: {
+      speeds: ['bullet', 'blitz', 'rapid', 'classical', 'correspondence'],
+      ratings: [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500],
+      since: undefined,
+      until: undefined,
+    },
+    masters: {
+      since: undefined,
+      until: undefined,
+    },
+  },
+};
 
-  if (Object.entries(storage).length === 0) {
-    const initialValues: ExtStorage = {
-      hideRatings: false,
-      hideOpponent: false,
-      hideFlags: false,
-      hideOwnFlagOnHome: false,
-      analyzeOnLichess: false,
-      openingExplorer: false,
-      database: 'lichess',
-      databaseOptions: {
-        lichess: {
-          speeds: ['bullet', 'blitz', 'rapid', 'classical', 'correspondence'],
-          ratings: [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500],
-          since: undefined,
-          until: undefined,
-        },
-        masters: {
-          since: undefined,
-          until: undefined,
-        },
-      },
-    };
-
-    await browser.storage.local.set(initialValues);
+browser.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'install') {
+    await browser.storage.local.set(initialStorage);
   }
-}
+  else if (details.reason === 'update') {
+    console.info('details', details);
+    // If an update adds new keys, fill in any missing key-value pair
+    // Currently can only handle new first-level keys
+    const storage = await browser.storage.local.get() as ExtStorage;
+    const parseResult = extStorageZ.safeParse(storage);
 
-initiateStorage();
+    if (!parseResult.success) {
+      console.info('issues', parseResult.error.issues);
+
+      await Promise.all(parseResult.error.issues.map((issue) => {
+        const erroneousStorageKey = issue.path[0] as keyof ExtStorage;
+
+        return browser.storage.local.set({
+          [erroneousStorageKey]: initialStorage[erroneousStorageKey],
+        });
+      }));
+    }
+  }
+});
 
 /**
  * @returns A `details` object to pass as argument into `insertCSS()` or `removeCSS()`
