@@ -1,6 +1,6 @@
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
-import { openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
+import { isOptionsOpen, openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
 import { type ExtStorage, isFeatureId } from './storageTypes';
 import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
 
@@ -39,6 +39,9 @@ const wcBoardObserver = new MutationObserver((mutationList) => {
   if (!document.querySelector('.analysis-view-component')) {
     return;
   }
+
+  if (isOptionsOpen())
+    return;
 
   // filter out mutations
   const oneOrMorePiecesMoved = mutationList.some((mutation) => {
