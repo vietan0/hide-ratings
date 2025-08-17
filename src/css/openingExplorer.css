@@ -4,6 +4,30 @@
   border-bottom: 0.1rem solid var(--color-border-default);
 }
 
+#openingExplorer #loading {
+  padding: 1rem;
+  font-size: 1.3rem;
+  display: flex;
+  justify-content: center;
+}
+
+#openingExplorer #loading > svg {
+  width: 2.5rem;
+  animation-name: rotate;
+  animation-duration: 0.75s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 #openingExplorer > #header {
   display: flex;
   justify-content: space-between;

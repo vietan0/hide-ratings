@@ -632,7 +632,15 @@ export async function renderOpeningExplorer() {
   openingExplorer.id = openingExplorerId;
   openingExplorer.dataset.isOptionsOpen = 'false';
   parent.prepend(openingExplorer);
+
+  const loadingContainer = document.createElement('div');
+  loadingContainer.id = 'loading';
+  const loadingIcon = await renderSvg('src/icons/MdiLoading.svg');
+  loadingContainer.append(loadingIcon);
+  openingExplorer.append(loadingContainer);
+
   openingExplorer.append(await renderHeader(), await renderContent());
+  loadingContainer.remove();
 }
 
 export const openingExplorerRegex = /chess.com\/analysis/;
