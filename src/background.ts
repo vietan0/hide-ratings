@@ -62,7 +62,6 @@ let pgn: string | undefined;
 
 browser.runtime.onConnect.addListener((p) => {
   port = p;
-  console.log('BG: Port connected!', port.name);
 
   port.onMessage.addListener(async (message) => {
     const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
@@ -108,11 +107,6 @@ browser.runtime.onConnect.addListener((p) => {
       default:
         throw new Error(`Unhandled message.command: ${msgTyped.command}`);
     }
-  });
-
-  port.onDisconnect.addListener(() => {
-    console.log('BG: Port disconnected!');
-    // Clean up any stored ports if needed
   });
 });
 

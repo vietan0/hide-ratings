@@ -136,7 +136,6 @@ async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
   const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess, openingExplorer } = await browser.storage.local.get() as ExtStorage;
 
-  // 1. page loads, check storage to see what to execute
   if (hideRatings) {
     port.postMessage({ command: 'hideRatings' });
   }
@@ -180,18 +179,6 @@ async function connectToBackground() {
       sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
     }
   }
-
-  // 2. add listeners
-  port.onMessage.addListener(async (message) => {
-    console.log('CS received message:', message);
-  });
-
-  port.onDisconnect.addListener(() => {
-    console.log('CS: Port disconnected! Attempting to reconnect...');
-    // Attempt to reconnect if the background script was unloaded or connection was lost
-    // This is crucial for resilience, especially with Manifest V3 service workers
-    setTimeout(connectToBackground, 500); // Reconnect after a short delay
-  });
 }
 
 // Call connect when the content script loads
