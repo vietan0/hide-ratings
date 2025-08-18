@@ -1,80 +1,10 @@
-import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
-import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
+import { isOptionsOpen, openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
+import { type ExtStorage, isFeatureId } from './storageTypes';
+import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
 
 let port: browser.runtime.Port;
-
-function usernameFail() {
-  const currentUsername = document.getElementById('notifications-request')!.getAttribute('username')!;
-  const usernameDivs = Array.from(document.querySelectorAll<HTMLDivElement>('.player-tagline .cc-user-username-component, .player-tagline .user-username-component'));
-  const usernamesInPage = usernameDivs.map(x => x.textContent!.toLowerCase());
-  const bothUsernamesLoaded = !usernamesInPage.includes('opponent');
-  const currentUserPlaying = usernamesInPage.includes(currentUsername.toLowerCase());
-
-  if (!bothUsernamesLoaded || !currentUserPlaying) {
-    return { cond: false, reason: 'username' } as const;
-  }
-}
-
-function hideOpponentInEffect() {
-  const placeholderImg = document.getElementById(placeholderImgId);
-  const placeholderUsernameDiv = document.getElementById(placeholderUsername);
-
-  return Boolean(placeholderImg || placeholderUsernameDiv);
-}
-
-// details: https://regexr.com/8gcck
-const hideOpponentRegex = /chess.com\/(?:game\/(?:live|daily\/)?\d+$|play\/online\/new)/;
-
-/**
- * - This function doesn't check for storage's `hideOpponent` and should only be called when it's already `true`.
- * - This function doesn't check if hideOpponent code is already in effect (avatar & username replaced)
- * - If return `{ cond: true }`, proceed to hide opponent.
- * - If return `{ cond: false, reason: string }`, unhide/do nothing depends on the case.
- * @returns whether all conditions to invoke `startHideOpponent()` are met.
- */
-function checkHideOpponentConds() {
-  // 1. url condition
-  // 2. username-related conditions
-  // 3. game over-related conditions
-  if (!window.location.href.match(hideOpponentRegex))
-    return { cond: false, reason: 'url' } as const;
-
-  return usernameFail() || isGameOver() || { cond: true };
-}
-
-function startHideOpponent() {
-  port.postMessage({ command: 'hideOpponent' });
-  overrideImg();
-  overrideUsername();
-}
-
-function stopHideOpponent() {
-  port.postMessage({ command: 'unhideOpponent' });
-  restoreImg();
-  restoreUsername();
-}
-
-/**
- * Run:
- * 1. When port first connects
- * 2. In mutation observer
- */
-async function hideOrUnhide() {
-  if (hideOpponentInEffect() && isGameOver()) {
-    stopHideOpponent();
-  }
-  else {
-    const { hideOpponent } = await browser.storage.local.get();
-
-    if (hideOpponent) {
-      if (checkHideOpponentConds().cond) {
-        startHideOpponent();
-      }
-    }
-  }
-}
 
 const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
   const topUserBlock = document.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
@@ -89,26 +19,123 @@ const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
   );
 
   if (focusModeWasToggled) {
-    hideOrUnhide();
+    hideOrUnhide(port);
   }
 
   else if (mutationList.some(m => m.target.contains(topUserBlock) || topUserBlock.contains(m.target))) {
-    hideOrUnhide();
+    hideOrUnhide(port);
   }
 });
 
-const boardObserver = new MutationObserver(() => isGameOver() ? addBtnToPlaces(port) : removeAllBtns());
+const layoutObserver = new MutationObserver(() => isGameOver() ? addBtnToPlaces(port) : removeAllBtns());
 
 function observeForAnalyzeOnLichess() {
-  boardObserver.observe(document.getElementById('board-layout-main')!, { subtree: true, childList: true });
-  boardObserver.observe(document.getElementById('board-layout-sidebar')!, { subtree: true, childList: true });
+  layoutObserver.observe(document.getElementById('board-layout-main')!, { subtree: true, childList: true });
+  layoutObserver.observe(document.getElementById('board-layout-sidebar')!, { subtree: true, childList: true });
 }
+
+const wcBoardObserver = new MutationObserver((mutationList) => {
+  // if not in analysis tab, return early
+  if (!document.querySelector('.analysis-view-component')) {
+    return;
+  }
+
+  if (isOptionsOpen())
+    return;
+
+  // filter out mutations
+  const oneOrMorePiecesMoved = mutationList.some((mutation) => {
+    if (mutation.target.nodeName === 'DIV') {
+      // confirm a div
+      const div = mutation.target as HTMLDivElement;
+
+      if (div.classList.contains('piece')) {
+        // confirm a piece
+
+        if (!div.classList.contains('dragging')) {
+          // confirm not a start-dragging mutation
+          const squareRegex = /(?<=square-)\d{2}/;
+          const oldSquare = mutation.oldValue && mutation.oldValue.match(squareRegex) ? mutation.oldValue.match(squareRegex)![0] : null;
+          const newSquare = div.className.match(squareRegex)![0];
+
+          if (oldSquare !== newSquare) {
+            // confirm a piece moved (could be different piece due to line jumping)
+            return true;
+          }
+
+          return false;
+        }
+
+        return false;
+      }
+
+      return false;
+    }
+
+    return false;
+  });
+
+  if (oneOrMorePiecesMoved) {
+    renderOpeningExplorer();
+  }
+});
+
+function startOpeningExplorer() {
+  const analysisViewComp = document.querySelector('.analysis-view-component');
+  if (!analysisViewComp)
+    return;
+
+  const wcBoard = document.getElementById('board-analysis-board');
+  if (!wcBoard)
+    return;
+
+  port.postMessage({ command: 'openingExplorer' });
+  renderOpeningExplorer();
+
+  // observe() called multiple times doesnt duplicate the observer, so it's fine
+  wcBoardObserver.observe(wcBoard, {
+    subtree: true,
+    attributes: true,
+    attributeFilter: ['class'],
+    attributeOldValue: true,
+  });
+}
+
+const sidebarObserver = new MutationObserver(async (mutationList) => {
+  // call startOpeningExplorer() when .analysis-view-component is subsequently added to DOM
+  // (first-render case is handled by startOpeningExplorer itself)
+  // 1. .analysis-view-component is added
+  // 2. .sidebar-tab-content-component is added and it has .analysis-view-component inside (swiching tab from Review to Analysis)
+
+  const analysisViewCompAdded = mutationList.some((mutation) => {
+    if (mutation.addedNodes.length === 1
+      && mutation.addedNodes.item(0)!.nodeName === 'DIV'
+    ) {
+      const addedDiv = mutation.addedNodes.item(0) as HTMLDivElement;
+
+      if (addedDiv.classList.contains('analysis-view-component')) {
+        return true;
+      }
+
+      if (addedDiv.classList.contains('sidebar-tab-content-component')
+        && Array.from(addedDiv.children).some(div => div.classList.contains('analysis-view-component'))
+      ) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  if (analysisViewCompAdded) {
+    startOpeningExplorer();
+  }
+});
 
 async function connectToBackground() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
-  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess } = await browser.storage.local.get();
+  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess, openingExplorer } = await browser.storage.local.get() as ExtStorage;
 
-  // 1. page loads, check storage to see what to execute
   if (hideRatings) {
     port.postMessage({ command: 'hideRatings' });
   }
@@ -117,7 +144,7 @@ async function connectToBackground() {
     const topPlayerComp = document.querySelector('.player-component.player-top');
 
     if (topPlayerComp) {
-      hideOrUnhide();
+      hideOrUnhide(port);
 
       topPlayerCompObserver.observe(topPlayerComp, {
         subtree: true,
@@ -143,60 +170,76 @@ async function connectToBackground() {
     }
   }
 
-  // 2. add listeners
-  port.onMessage.addListener(async (message) => {
-    console.log('CS received message:', message);
-  });
-
-  port.onDisconnect.addListener(() => {
-    console.log('CS: Port disconnected! Attempting to reconnect...');
-    // Attempt to reconnect if the background script was unloaded or connection was lost
-    // This is crucial for resilience, especially with Manifest V3 service workers
-    setTimeout(connectToBackground, 500); // Reconnect after a short delay
-  });
+  if (openingExplorer) {
+    // reminder: code in content script will be invoked every time file is saved in dev mode
+    if (window.location.href.match(openingExplorerRegex)) {
+      // 1. check for first appearance (observer can't catch)
+      startOpeningExplorer();
+      // 2. observing for subsequent appearances
+      sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
+    }
+  }
 }
 
 // Call connect when the content script loads
 connectToBackground();
 
 browser.storage.local.onChanged.addListener(async (changes) => {
-  const [changedFeature, { newValue }] = Object.entries(changes)[0]!;
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const [changedKey, { newValue }] = entries[0]!;
 
-  if (changedFeature === 'hideOpponent') {
-    if (newValue) {
-      if (window.location.href.match(hideOpponentRegex)) {
-        topPlayerCompObserver.observe(document.querySelector('.player-component.player-top')!, {
-          subtree: true,
-          childList: true,
-          attributes: true,
-          attributeFilter: ['class'],
-          attributeOldValue: true,
-        });
+  if (isFeatureId(changedKey)) {
+    if (changedKey === 'hideOpponent') {
+      if (newValue) {
+        if (window.location.href.match(hideOpponentRegex)) {
+          topPlayerCompObserver.observe(document.querySelector('.player-component.player-top')!, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['class'],
+            attributeOldValue: true,
+          });
 
-        if (checkHideOpponentConds().cond) {
-          startHideOpponent();
+          if (checkHideOpponentConds().cond) {
+            startHideOpponent(port);
+          }
         }
       }
-    }
-    else {
-      stopHideOpponent();
-      topPlayerCompObserver.disconnect();
-    }
-  }
-
-  if (changedFeature === 'analyzeOnLichess') {
-    if (newValue) {
-      if (window.location.href.match(analyzeOnLichessRegex)) {
-        observeForAnalyzeOnLichess();
-
-        if (isGameOver()) {
-          addBtnToPlaces(port);
-        }
+      else {
+        stopHideOpponent(port);
+        topPlayerCompObserver.disconnect();
       }
     }
-    else {
-      removeAllBtns();
-      boardObserver.disconnect();
+
+    if (changedKey === 'analyzeOnLichess') {
+      if (newValue) {
+        if (window.location.href.match(analyzeOnLichessRegex)) {
+          observeForAnalyzeOnLichess();
+
+          if (isGameOver()) {
+            addBtnToPlaces(port);
+          }
+        }
+      }
+      else {
+        removeAllBtns();
+        layoutObserver.disconnect();
+      }
+    }
+
+    if (changedKey === 'openingExplorer') {
+      if (newValue) {
+        if (window.location.href.match(openingExplorerRegex)) {
+          startOpeningExplorer();
+          sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
+        }
+      }
+      else {
+        port.postMessage({ command: 'hideOpeningExplorer' });
+        document.getElementById(openingExplorerId)?.remove();
+        sidebarObserver.disconnect();
+        wcBoardObserver.disconnect();
+      }
     }
   }
 });

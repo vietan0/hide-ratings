@@ -9,7 +9,7 @@
     "firefox": ["appearance", "games-entertainment"]
   },
   "description": {
-    "en-US": "Customize your Chess.com experience by letting you hide distracting elements like player ratings, country flags, and even your opponent's details during a game. It also adds convenient Lichess analysis buttons for your finished games."
+    "en-US": "Customize your Chess.com experience by hiding distracting elements like player ratings, opponent details, and country flags. It can also send your games to Lichess analysis, and integrate the Lichess opening explorer directly into the Chess.com analysis page."
   },
   "requires_payment": false,
   "support_email": {

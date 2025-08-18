@@ -1,16 +1,17 @@
 {
   "type": "module",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "scripts": {
     "build": "web-ext build",
     "dev": "web-ext run --devtools --start-url www.chess.com --start-url addons.mozilla.org/en-US/firefox/addon/ublock-origin",
     "lint": "eslint .",
-    "rollup-build": "rollup --config",
-    "rollup-watch": "rollup --config -w",
+    "rb": "rollup --config",
+    "rw": "rollup --config -w",
     "sign": "node dist/sign.js"
   },
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "zod": "^4.0.17"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.22.0",

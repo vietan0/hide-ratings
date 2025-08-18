@@ -1,8 +1,8 @@
 # Chess.com Tweaks - Hide ratings, hide opponent and more!
 
-[![Firefox Addons Link](https://img.shields.io/badge/Firefox-1.5.0-blue?style=flat&logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
+[![Firefox Addons Link](https://img.shields.io/badge/Firefox-1.6.0-blue?style=flat&logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
 
-Chess.com Tweaks is a Firefox extension that helps you customize your Chess.com experience by letting you hide distracting elements like player ratings, country flags, and even your opponent's details during a game. It also adds convenient Lichess analysis buttons for your finished games.
+Chess.com Tweaks is a Firefox extension that helps you customize your Chess.com experience by hiding distracting elements like player ratings, opponent details, and country flags. It can also send your games to Lichess analysis, and integrate the Lichess opening explorer directly into the Chess.com analysis page.
 
 [<img src="https://extensionworkshop.com/assets/img/documentation/publish/get-the-addon-178x60px.dad84b42.png" alt="">](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
 
@@ -45,3 +45,9 @@ Add buttons that send your finished games to the Lichess analysis page
 
 ![analyze on lichess](./screenshots/analyzeOnLichess.jpg)
 ![analyze on lichess sidebar](./screenshots/analyzeOnLichess-sidebar.jpg)
+
+### Opening Explorer
+
+Add Lichess's opening explorer to Analysis page
+
+![opening explorer](./screenshots/openingExplorer.jpg)

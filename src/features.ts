@@ -1,4 +1,10 @@
-const features = [{
+import type { FeatureId } from './storageTypes';
+
+const features: {
+  id: FeatureId;
+  title: string;
+  description: string;
+}[] = [{
   id: 'hideRatings',
   title: 'Hide Ratings',
   description: 'Hide all players\' ratings',
@@ -18,6 +24,10 @@ const features = [{
   id: 'analyzeOnLichess',
   title: 'Analyze on Lichess',
   description: 'Add buttons that send your finished games to the Lichess analysis page',
+}, {
+  id: 'openingExplorer',
+  title: 'Opening Explorer',
+  description: 'Add Lichess\'s opening explorer to Analysis page',
 }];
 
 export default features;

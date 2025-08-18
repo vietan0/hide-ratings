@@ -1,18 +1,19 @@
 import features from '../features';
+import renderSvg from '../renderSvg';
+import { type ExtStorage, type FeatureId, type FeatureStorage, isFeatureId } from '../storageTypes';
 
-async function renderSwitch(featureId: string, btn: HTMLButtonElement) {
-  const storage = await browser.storage.local.get(featureId);
-  const switchIcon = document.createElement('img');
-  switchIcon.className = 'max-w-7';
+async function renderSwitch(featureId: FeatureId, btn: HTMLButtonElement) {
+  const storage = await browser.storage.local.get(featureId) as Pick<FeatureStorage, typeof featureId>;
+  const switchIcon = await renderSvg(`src/icons/${storage[featureId] ? 'MdiToggleSwitch' : 'MdiToggleSwitchOff'}.svg`);
+  switchIcon.classList.add('max-w-8', storage[featureId] ? 'text-[#81b64c]' : 'text-zinc-500');
   switchIcon.id = `switch-${featureId}`;
-  switchIcon.src = storage[featureId] ? './LineMdSwitchOffTwotoneToSwitchTwotoneTransition.svg' : './LineMdSwitchTwotoneToSwitchOffTwotoneTransition.svg';
   btn.append(switchIcon);
 }
 
 async function handleClick(e: MouseEvent) {
   const featureBtn = e.currentTarget as HTMLButtonElement;
-  const featureId = featureBtn.id;
-  const storage = await browser.storage.local.get(featureId);
+  const featureId = featureBtn.id as FeatureId;
+  const storage = await browser.storage.local.get(featureId) as Pick<FeatureStorage, typeof featureId>;
 
   await browser.storage.local.set({
     [featureId]: !storage[featureId],
@@ -49,16 +50,29 @@ async function renderBtns() {
   }
 }
 
-function updateSwitchIcon(changedFeature: string) {
-  const btn = document.getElementById(changedFeature) as HTMLButtonElement;
-  const oldSwitchIcon = document.getElementById(`switch-${changedFeature}`)!;
-  renderSwitch(changedFeature, btn);
+function updateSwitchIcon(featureId: FeatureId) {
+  const btn = document.getElementById(featureId) as HTMLButtonElement;
+  const oldSwitchIcon = document.getElementById(`switch-${featureId}`)!;
+  renderSwitch(featureId, btn);
   oldSwitchIcon.remove();
 }
 
 renderBtns();
 
+async function renderFooterSvg() {
+  const container = document.getElementById('container')!;
+  const footer = container.nextElementSibling!;
+  const footerLink = footer.getElementsByTagName('a').item(0)!;
+  const svg = await renderSvg('src/icons/MdiLaunch.svg');
+  svg.classList.add('w-3', 'h-auto', 'inline-block', 'object-contain');
+  footerLink.append(svg);
+}
+
+renderFooterSvg();
+
 browser.storage.local.onChanged.addListener((changes) => {
-  const [changedFeature] = Object.entries(changes)[0]!;
-  updateSwitchIcon(changedFeature!);
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const [changedKey] = entries[0]!;
+  if (isFeatureId(changedKey))
+    updateSwitchIcon(changedKey);
 });

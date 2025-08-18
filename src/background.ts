@@ -1,21 +1,51 @@
-import features from './features';
+import { type ExtStorage, extStorageZ, isFeatureId } from './storageTypes';
 
-async function initiateStorage() {
-  // initiate storage after first install
-  const storage = await browser.storage.local.get();
+const initialStorage: ExtStorage = {
+  hideRatings: false,
+  hideOpponent: false,
+  hideFlags: false,
+  hideOwnFlagOnHome: false,
+  analyzeOnLichess: false,
+  openingExplorer: false,
+  database: 'lichess',
+  databaseOptions: {
+    lichess: {
+      speeds: ['bullet', 'blitz', 'rapid', 'classical', 'correspondence'],
+      ratings: [1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500],
+      since: undefined,
+      until: undefined,
+    },
+    masters: {
+      since: undefined,
+      until: undefined,
+    },
+  },
+};
 
-  if (Object.entries(storage).length === 0) {
-    const initialValues: Record<string, boolean> = {};
-
-    for (const { id } of features) {
-      initialValues[id] = false;
-    }
-
-    await browser.storage.local.set(initialValues);
+browser.runtime.onInstalled.addListener(async (details) => {
+  if (details.reason === 'install') {
+    await browser.storage.local.set(initialStorage);
   }
-}
+  else if (details.reason === 'update') {
+    console.info('details', details);
+    // If an update adds new keys, fill in any missing key-value pair
+    // Currently can only handle new first-level keys
+    const storage = await browser.storage.local.get() as ExtStorage;
+    const parseResult = extStorageZ.safeParse(storage);
 
-initiateStorage();
+    if (!parseResult.success) {
+      console.info('issues', parseResult.error.issues);
+
+      await Promise.all(parseResult.error.issues.map((issue) => {
+        const erroneousStorageKey = issue.path[0] as keyof ExtStorage;
+
+        return browser.storage.local.set({
+          [erroneousStorageKey]: initialStorage[erroneousStorageKey],
+        });
+      }));
+    }
+  }
+});
 
 /**
  * @returns A `details` object to pass as argument into `insertCSS()` or `removeCSS()`
@@ -32,7 +62,6 @@ let pgn: string | undefined;
 
 browser.runtime.onConnect.addListener((p) => {
   port = p;
-  console.log('BG: Port connected!', port.name);
 
   port.onMessage.addListener(async (message) => {
     const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
@@ -67,28 +96,34 @@ browser.runtime.onConnect.addListener((p) => {
         break;
       }
 
+      case 'openingExplorer':
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('openingExplorer', id))));
+        break;
+
+      case 'hideOpeningExplorer':
+        Promise.all(tabs.map(({ id }) => browser.scripting.removeCSS(getCSSDetails('openingExplorer', id))));
+        break;
+
       default:
         throw new Error(`Unhandled message.command: ${msgTyped.command}`);
     }
   });
-
-  port.onDisconnect.addListener(() => {
-    console.log('BG: Port disconnected!');
-    // Clean up any stored ports if needed
-  });
 });
 
 browser.storage.local.onChanged.addListener(async (changes) => {
-  const [changedFeature, { newValue }] = Object.entries(changes)[0]!;
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const [changedKey, { newValue }] = entries[0]!;
 
-  if (changedFeature !== 'hideOpponent' && changedFeature !== 'analyzeOnLichess') {
-    // changes to hideOpponent are handled by content script
-    const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+  if (isFeatureId(changedKey)) {
+    if (changedKey !== 'hideOpponent' && changedKey !== 'analyzeOnLichess') {
+    // changes to hideOpponent and analyzeOnLichess are handled by content script
+      const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 
-    Promise.all(tabs.map(({ id }) =>
-      newValue
-        ? browser.scripting.insertCSS(getCSSDetails(changedFeature, id))
-        : browser.scripting.removeCSS(getCSSDetails(changedFeature, id)),
-    ));
+      Promise.all(tabs.map(({ id }) =>
+        newValue
+          ? browser.scripting.insertCSS(getCSSDetails(changedKey, id))
+          : browser.scripting.removeCSS(getCSSDetails(changedKey, id)),
+      ));
+    }
   }
 });

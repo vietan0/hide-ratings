@@ -1,0 +1,250 @@
+/* content-related */
+#openingExplorer {
+  position: relative;
+  border-bottom: 0.1rem solid var(--color-border-default);
+}
+
+#openingExplorer #loading {
+  padding: 1rem;
+  font-size: 1.3rem;
+  display: flex;
+  justify-content: center;
+}
+
+#openingExplorer #loading > svg {
+  width: 2.5rem;
+  animation-name: rotate;
+  animation-duration: 0.75s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+#openingExplorer > #header {
+  display: flex;
+  justify-content: space-between;
+}
+
+#openingExplorer table {
+  border-collapse: collapse;
+}
+
+#openingExplorer table tr {
+  height: 28px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+#openingExplorer table tr.totalRow {
+  font-weight: 700;
+  cursor: initial;
+  user-select: none;
+}
+
+#openingExplorer table tr:not(.totalRow):hover {
+  background-color: var(--color-bg-subtler);
+}
+
+/* sanCell */
+#openingExplorer table td:nth-child(1) {
+  padding-inline: 1rem;
+  text-wrap: nowrap;
+  width: 1%;
+}
+/* percCell */
+#openingExplorer table td:nth-child(2) {
+  padding-inline-end: 1rem;
+  font-size: 1.1rem;
+  color: var(--color-text-subtle);
+  width: 30px;
+}
+/* moveTotalCell */
+#openingExplorer table td:nth-child(3) {
+  padding-inline-end: 1rem;
+  font-size: 1.1rem;
+  color: var(--color-text-subtle);
+  text-align: end;
+  width: 1%;
+}
+/* percentageBar cell */
+#openingExplorer table td:nth-child(4) {
+  padding: 0px;
+  padding-inline-end: 8px;
+}
+/* percentageBar */
+#openingExplorer table td:nth-child(4) > div {
+  border-radius: var(--radius-s);
+  display: flex;
+  overflow: hidden;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 2.3rem;
+}
+
+#tabs > button {
+  border: none;
+  padding: 0.5rem 1.5rem;
+  background-color: transparent;
+  color: var(--color-text-default);
+  font-size: 1.2rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+#tabs > button.selected {
+  background-color: var(--color-bg-subtlest);
+  color: var(--color-text-boldest);
+  font-weight: 600;
+  cursor: initial;
+}
+#tabs > button:hover {
+  background-color: var(--color-bg-subtlest);
+}
+
+#optionsBtn {
+  background-color: transparent;
+  border: none;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+}
+
+#optionsBtn:hover {
+  background-color: var(--color-bg-subtler);
+}
+
+#optionsBtn > svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--color-text-default);
+}
+
+#content {
+  max-height: 90px;
+  overflow-y: scroll;
+  background-color: var(--color-bg-subtlest);
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background-color: hsla(0, 0%, 0%, 0.2);
+}
+
+/* options-related */
+#options {
+  background-color: var(--color-bg-subtlest);
+  padding: 1rem;
+}
+
+#options form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+#options .label {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+div:has(> :is(.timeControl, .rating)) {
+  display: flex;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 0.1rem solid var(--color-border-default);
+}
+
+:is(.timeControl, .rating) {
+  flex-grow: 1;
+  height: 2.5rem;
+  padding: 0;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  border: none;
+  color: var(--color-text-subtle);
+  background-color: var(--color-border-default-hovered);
+}
+
+.dark-mode :is(.timeControl, .rating) {
+  background-color: var(--color-bg-subtlest);
+}
+
+:is(.timeControl, .rating).selected {
+  background-color: var(--color-bg-subtler);
+  color: var(--color-text-boldest);
+}
+
+.dark-mode :is(.timeControl, .rating).selected {
+  background-color: var(--color-border-default-hovered);
+}
+
+:is(.timeControl, .rating):hover {
+  background-color: var(--color-bg-subtle);
+}
+
+.dark-mode :is(.timeControl, .rating):hover {
+  background-color: var(--color-bg-subtler);
+}
+
+.dark-mode :is(.timeControl, .rating).selected:hover {
+  background-color: var(--color-bg-subtler);
+}
+
+.rating {
+  padding: 0.5rem;
+}
+
+:is(.timeControl, .rating):not(:last-child) {
+  border-right: 0.1rem solid var(--color-border-default);
+}
+
+:is(.timeControl, .rating):not(:first-child) {
+  border-left: 0.1rem solid var(--color-border-default);
+}
+
+.timeControl > svg {
+  height: 60%;
+}
+
+#options input {
+  border: none;
+  max-width: 7rem;
+  background-color: var(--color-bg-subtle);
+  padding: 0.5rem;
+  border-radius: 0.3rem;
+}
+
+#sinceUntil {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* input wrappers */
+#sinceUntil > * {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+#sinceUntil .label {
+  min-width: 6rem;
+}
+
+#options form button[type='submit'] {
+  margin-block: 0;
+}
