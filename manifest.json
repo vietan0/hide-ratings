@@ -13,7 +13,6 @@
     "https://www.chess.com/*",
     "https://explorer.lichess.ovh/*"
   ],
-  "content_security_policy": "script-src 'self' 'wasm-unsafe-eval' 'unsafe-eval'",
   "background": {
     "scripts": [
       "dist/background.js"

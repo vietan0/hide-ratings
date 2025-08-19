@@ -1,4 +1,4 @@
-import { type ExtStorage, extStorageZ, isFeatureId } from './storageTypes';
+import { type ExtStorage, isFeatureId } from './storageTypes';
 
 const initialStorage: ExtStorage = {
   hideRatings: false,
@@ -30,19 +30,14 @@ browser.runtime.onInstalled.addListener(async (details) => {
     console.info('details', details);
     // If an update adds new keys, fill in any missing key-value pair
     // Currently can only handle new first-level keys
-    const storage = await browser.storage.local.get() as ExtStorage;
-    const parseResult = extStorageZ.safeParse(storage);
+    const storage = await browser.storage.local.get();
+    const currentKeys = Object.keys(storage);
+    const initialKeys = Object.keys(initialStorage) as (keyof ExtStorage)[];
 
-    if (!parseResult.success) {
-      console.info('issues', parseResult.error.issues);
-
-      await Promise.all(parseResult.error.issues.map((issue) => {
-        const erroneousStorageKey = issue.path[0] as keyof ExtStorage;
-
-        return browser.storage.local.set({
-          [erroneousStorageKey]: initialStorage[erroneousStorageKey],
-        });
-      }));
+    for (const key of initialKeys) {
+      if (!currentKeys.includes(key)) {
+        browser.storage.local.set({ [key]: initialStorage[key] });
+      }
     }
   }
 });

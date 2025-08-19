@@ -10,8 +10,7 @@
     "sign": "node dist/sign.js"
   },
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "zod": "^4.0.17"
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.22.0",

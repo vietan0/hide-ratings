@@ -11,9 +11,6 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.4.5
-      zod:
-        specifier: ^4.0.17
-        version: 4.0.17
     devDependencies:
       '@antfu/eslint-config':
         specifier: ^2.22.0
@@ -2873,9 +2870,6 @@ packages:
 
   zip-dir@2.0.0:
     resolution: {integrity: sha512-uhlsJZWz26FLYXOD6WVuq+fIcZ3aBPGo/cFdiLlv3KNwpa52IF3ISV8fLhQLiqVu5No3VhlqlgthN6gehil1Dg==}
-
-  zod@4.0.17:
-    resolution: {integrity: sha512-1PHjlYRevNxxdy2JZ8JcNAw7rX8V9P1AKkP+x/xZfxB0K5FYfuV+Ug6P/6NVSR2jHQ+FzDDoDHS04nYUsOIyLQ==}
 
 snapshots:
 
@@ -5884,5 +5878,3 @@ snapshots:
     dependencies:
       async: 3.2.5
       jszip: 3.10.1
-
-  zod@4.0.17: {}
