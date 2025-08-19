@@ -34,6 +34,7 @@ const optionsId = 'options';
 const headerId = 'header';
 const cache = new Map<string, Response>();
 let fen = '';
+const fetching: string[] = [];
 
 export function isOptionsOpen() {
   const openingExplorer = document.getElementById(openingExplorerId);
@@ -115,7 +116,7 @@ async function renderContent() {
       return resInCache;
     }
 
-    // set loading state before calling await fetch()
+    // add overlay before calling await fetch()
     const overlay = document.createElement('div');
     const overlayClass = 'overlay';
     overlay.className = overlayClass;
@@ -125,12 +126,23 @@ async function renderContent() {
       openingExplorer.append(overlay);
     }
 
+    fetching.push(url);
+
     const response = await fetch(url)
       .then(r => r.json())
       .catch(err => console.error('There has been an error fetching from Lichess', err)) as Response;
 
-    for (const div of document.getElementsByClassName(overlayClass)) {
-      div.remove();
+    const indexToRemove = fetching.findIndex(fetchingUrl => fetchingUrl === url);
+
+    if (indexToRemove !== -1) {
+      fetching.splice(indexToRemove, 1);
+    }
+
+    if (fetching.length === 0) {
+      // only remove the overlay if all fetches are finished
+      for (const div of document.getElementsByClassName(overlayClass)) {
+        div.remove();
+      }
     }
 
     cache.set(url, response);
@@ -591,25 +603,27 @@ export async function renderOpeningExplorer() {
     document.ccTweaks_responseFenListenerAdded = true;
   }
 
-  const existingOpeningExplorer = document.getElementById(openingExplorerId);
+  const prevOpeningExplorer = document.getElementById(openingExplorerId);
 
-  if (existingOpeningExplorer) {
-    // remove all arrows on re-render,
-    // since moveRow's mouseleave won't fire if moveRow is removed from DOM
+  if (prevOpeningExplorer) {
+    /* Remove all arrows on re-render,
+    since moveRow's mouseleave won't fire if moveRow is removed from DOM. */
     document.dispatchEvent(new CustomEvent('removeAllArrows'));
     // re-render each child separately, not the whole div to avoid flashing
-    const header = existingOpeningExplorer.querySelector(`#${headerId}`);
-    const contentOrOptions = existingOpeningExplorer.querySelector(`#${contentId}, #${optionsId}`)!;
+    const currHeader = await renderHeader();
+    const currView = isOptionsOpen() ? await renderOptions() : await renderContent();
+    /* Call querySelector() after all the awaits,
+      because if a render occurs before the awaits finish,
+      oldHeader/oldView would be a stale object (i.e. no parent), making insertAdjacentElement() fail.
+      - From MDN: "The beforebegin and afterend positions work only if the node is in a tree and has an element parent."
+     */
+    const prevHeader = prevOpeningExplorer.querySelector(`#${headerId}`)!;
+    const prevView = prevOpeningExplorer.querySelector(`#${contentId}, #${optionsId}`)!;
 
-    if (header) {
-      header.insertAdjacentElement('beforebegin', await renderHeader());
-      header.remove();
-    }
-
-    if (contentOrOptions) {
-      contentOrOptions.insertAdjacentElement('beforebegin', isOptionsOpen() ? await renderOptions() : await renderContent());
-      contentOrOptions.remove();
-    }
+    prevHeader.insertAdjacentElement('beforebegin', currHeader);
+    prevHeader.remove();
+    prevView.insertAdjacentElement('beforebegin', currView);
+    prevView.remove();
 
     return;
   }
