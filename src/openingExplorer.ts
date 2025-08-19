@@ -34,6 +34,7 @@ const optionsId = 'options';
 const headerId = 'header';
 const cache = new Map<string, Response>();
 let fen = '';
+let controller: AbortController | null = null;
 const fetching: string[] = [];
 
 export function isOptionsOpen() {
@@ -102,17 +103,24 @@ async function renderContent() {
       const ratings = databaseOptions.lichess.ratings.join(',');
       const since = databaseOptions.lichess.since ? `&since=${databaseOptions.lichess.since}` : '';
       const until = databaseOptions.lichess.until ? `&until=${databaseOptions.lichess.until}` : '';
-      url = `https://explorer.lichess.ovh/lichess?variant=standard&fen=${fen}&speeds=${speeds}&ratings=${ratings}&topGames=0&recentGames=0${since}${until}`;
+      url = `https://explorer.lichess.ovh/lichess?variant=standard&fen=${encodeURIComponent(fen)}&speeds=${speeds}&ratings=${ratings}&topGames=0&recentGames=0${since}${until}`;
     }
     else {
       const since = databaseOptions.masters.since ? `&since=${databaseOptions.masters.since}` : '';
       const until = databaseOptions.masters.until ? `&until=${databaseOptions.masters.until}` : '';
-      url = `https://explorer.lichess.ovh/masters?fen=${fen}&topGames=0${since}${until}`;
+      url = `https://explorer.lichess.ovh/masters?fen=${encodeURIComponent(fen)}&topGames=0${since}${until}`;
     }
 
     const resInCache = cache.get(url);
 
     if (resInCache) {
+      if (controller) {
+        // a response was found in cache while a fetch is in progress
+        // happens when moving backwards to a fetched position (like pressing ArrowLeft on keyboard) while the current fetch hasn't finished
+        controller.abort();
+        // fetchLichess will immediately return undefined (as it does whenever abort() is called)
+      }
+
       return resInCache;
     }
 
@@ -126,12 +134,27 @@ async function renderContent() {
       openingExplorer.append(overlay);
     }
 
+    if (controller) {
+      // a fetch is in progress
+      controller.abort();
+    }
+
+    controller = new AbortController();
+    const signal = controller.signal;
     fetching.push(url);
 
-    const response = await fetch(url)
+    const response = await fetch(url, { signal })
       .then(r => r.json())
-      .catch(err => console.error('There has been an error fetching from Lichess', err)) as Response;
+      .catch((err) => {
+        if (err.name === 'AbortError') {
+          console.info(`Aborted fetching ${url}`);
+        }
+        else {
+          console.error('There has been an error fetching from Lichess', err);
+        }
+      }) as Response | undefined;
 
+    controller = null;
     const indexToRemove = fetching.findIndex(fetchingUrl => fetchingUrl === url);
 
     if (indexToRemove !== -1) {
@@ -145,7 +168,9 @@ async function renderContent() {
       }
     }
 
-    cache.set(url, response);
+    if (response) {
+      cache.set(url, response);
+    }
 
     return response;
   }
@@ -284,12 +309,15 @@ async function renderContent() {
 
   document.dispatchEvent(new CustomEvent('requestFen'));
   const res = await fetchLichess(fen);
-  const content = document.createElement('div');
-  content.id = contentId;
-  const noGameFound = res.white === 0 && res.black === 0 && res.draws === 0;
-  content.append(noGameFound ? renderNoGameFound() : renderTable(res));
 
-  return content;
+  if (res) {
+    const content = document.createElement('div');
+    content.id = contentId;
+    const noGameFound = res.white === 0 && res.black === 0 && res.draws === 0;
+    content.append(noGameFound ? renderNoGameFound() : renderTable(res));
+
+    return content;
+  }
 }
 
 async function renderOptions() {
@@ -612,6 +640,9 @@ export async function renderOpeningExplorer() {
     // re-render each child separately, not the whole div to avoid flashing
     const currHeader = await renderHeader();
     const currView = isOptionsOpen() ? await renderOptions() : await renderContent();
+    if (!currView)
+      return; // fetch was aborted, cancel the rerender
+
     /* Call querySelector() after all the awaits,
       because if a render occurs before the awaits finish,
       oldHeader/oldView would be a stale object (i.e. no parent), making insertAdjacentElement() fail.
@@ -653,7 +684,14 @@ export async function renderOpeningExplorer() {
   loadingContainer.append(loadingIcon);
   openingExplorer.append(loadingContainer);
 
-  openingExplorer.append(await renderHeader(), await renderContent());
+  const header = await renderHeader();
+  openingExplorer.append(header);
+  const content = await renderContent();
+
+  if (content) {
+    openingExplorer.append(content);
+  }
+
   loadingContainer.remove();
 }
 
