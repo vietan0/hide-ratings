@@ -17,7 +17,6 @@ function parseArgs(args: Record<string, string | undefined>) {
 
 const args = {
   '--channel': 'listed',
-  '--amo-metadata': 'metadata.json',
   '--api-key': process.env.WEB_EXT_API_KEY,
   '--api-secret': process.env.WEB_EXT_API_SECRET,
 };

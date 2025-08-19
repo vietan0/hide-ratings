@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "scripts": {
     "build": "web-ext build",
     "dev": "web-ext run --devtools --start-url www.chess.com --start-url addons.mozilla.org/en-US/firefox/addon/ublock-origin",
