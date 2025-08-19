@@ -55,15 +55,40 @@ const wcBoardObserver = new MutationObserver((mutationList) => {
         if (!div.classList.contains('dragging')) {
           // confirm not a start-dragging mutation
           const squareRegex = /(?<=square-)\d{2}/;
-          const oldSquare = mutation.oldValue && mutation.oldValue.match(squareRegex) ? mutation.oldValue.match(squareRegex)![0] : null;
-          const newSquare = div.className.match(squareRegex)![0];
+          if (mutation.oldValue === null)
+            return false;
+
+          const oldSquareMatches = mutation.oldValue.match(squareRegex);
+          const newSquareMatches = div.className.match(squareRegex);
+          if (!oldSquareMatches || !newSquareMatches)
+            return false;
+
+          const oldSquare = oldSquareMatches[0];
+          const newSquare = newSquareMatches[0];
 
           if (oldSquare !== newSquare) {
             // confirm a piece moved (could be different piece due to line jumping)
+            // can catch Promotion No Capture moves
             return true;
           }
+          else {
+            const pieceRegex = /[wb]\w/;
+            const oldPieceMatches = mutation.oldValue.match(pieceRegex);
+            const newPieceMatches = div.className.match(pieceRegex);
+            if (!oldPieceMatches || !newPieceMatches)
+              return false;
 
-          return false;
+            const oldPiece = oldPieceMatches[0];
+            const newPiece = newPieceMatches[0];
+
+            if (oldPiece !== newPiece) {
+              // confirm a Clicking On A Capture Move From The Engine Line
+              // can catch Promotion Capture moves
+              return true;
+            }
+
+            return false;
+          }
         }
 
         return false;
