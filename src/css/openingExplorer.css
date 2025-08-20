@@ -92,20 +92,33 @@
 #tabs > button {
   border: none;
   padding: 0.5rem 1.5rem;
-  background-color: transparent;
+  background-color: var(--color-bg-subtler);
   color: var(--color-text-default);
   font-size: 1.2rem;
   font-weight: 400;
   cursor: pointer;
 }
 
-#tabs > button.selected {
+.dark-mode #tabs > button {
+  background-color: transparent;
+}
+
+#tabs > button:hover {
+  color: var(--color-text-boldest);
+}
+
+.dark-mode #tabs > button:hover {
   background-color: var(--color-bg-subtlest);
+}
+
+#tabs > button.selected {
   color: var(--color-text-boldest);
   font-weight: 600;
   cursor: initial;
+  background-color: transparent;
 }
-#tabs > button:hover {
+
+.dark-mode #tabs > button.selected {
   background-color: var(--color-bg-subtlest);
 }
 
@@ -130,6 +143,9 @@
 #content {
   max-height: 90px;
   overflow-y: scroll;
+}
+
+.dark-mode #content {
   background-color: var(--color-bg-subtlest);
 }
 
@@ -139,7 +155,11 @@
   left: 0;
   bottom: 0;
   right: 0;
-  background-color: hsla(0, 0%, 0%, 0.2);
+  background-color: var(--color-transparent-black-5);
+}
+
+.dark-mode .overlay {
+  background-color: var(--color-transparent-black-20);
 }
 
 /* options-related */
