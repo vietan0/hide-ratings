@@ -32,10 +32,10 @@ export const openingExplorerId = 'openingExplorer';
 export const contentId = 'content';
 const optionsId = 'options';
 const headerId = 'header';
+const overlayClass = 'overlay';
 const cache = new Map<string, Response>();
 let fen = '';
-let controller: AbortController | null = null;
-const fetching: string[] = [];
+let currentFetches: { controller: AbortController; fen: string }[] = [];
 
 export function isOptionsOpen() {
   const openingExplorer = document.getElementById(openingExplorerId);
@@ -95,6 +95,15 @@ async function renderHeader() {
 
 async function renderContent() {
   async function fetchLichess(fen: string) {
+    function removeOverlay() {
+      if (currentFetches.length === 0) {
+        // only remove the overlay if there are no fetch requests going on
+        for (const div of document.getElementsByClassName(overlayClass)) {
+          div.remove();
+        }
+      }
+    }
+
     const { database, databaseOptions } = await browser.storage.local.get() as ExtStorage;
     let url = '';
 
@@ -111,22 +120,25 @@ async function renderContent() {
       url = `https://explorer.lichess.ovh/masters?fen=${encodeURIComponent(fen)}&topGames=0${since}${until}`;
     }
 
+    const controller = new AbortController();
+
+    if (!currentFetches.find(x => x.fen === fen)) {
+      // no duplicate
+      currentFetches.push({ controller, fen });
+    }
+
     const resInCache = cache.get(url);
 
     if (resInCache) {
-      if (controller) {
-        // a response was found in cache while a fetch is in progress
-        // happens when moving backwards to a fetched position (like pressing ArrowLeft on keyboard) while the current fetch hasn't finished
-        controller.abort();
-        // fetchLichess will immediately return undefined (as it does whenever abort() is called)
-      }
+      const matchingIndex = currentFetches.findIndex(x => x.controller === controller);
+      currentFetches.splice(matchingIndex, 1);
+      removeOverlay();
 
       return resInCache;
     }
 
     // add overlay before calling await fetch()
     const overlay = document.createElement('div');
-    const overlayClass = 'overlay';
     overlay.className = overlayClass;
     const openingExplorer = document.getElementById(openingExplorerId);
 
@@ -134,39 +146,16 @@ async function renderContent() {
       openingExplorer.append(overlay);
     }
 
-    if (controller) {
-      // a fetch is in progress
-      controller.abort();
-    }
-
-    controller = new AbortController();
-    const signal = controller.signal;
-    fetching.push(url);
-
-    const response = await fetch(url, { signal })
+    const response = await fetch(url, { signal: controller.signal })
       .then(r => r.json())
       .catch((err) => {
-        if (err.name === 'AbortError') {
-          console.info(`Aborted fetching ${url}`);
-        }
-        else {
+        if (err.name !== 'AbortError')
           console.error('There has been an error fetching from Lichess', err);
-        }
       }) as Response | undefined;
 
-    controller = null;
-    const indexToRemove = fetching.findIndex(fetchingUrl => fetchingUrl === url);
-
-    if (indexToRemove !== -1) {
-      fetching.splice(indexToRemove, 1);
-    }
-
-    if (fetching.length === 0) {
-      // only remove the overlay if all fetches are finished
-      for (const div of document.getElementsByClassName(overlayClass)) {
-        div.remove();
-      }
-    }
+    const matchingIndex = currentFetches.findIndex(x => x.controller === controller);
+    currentFetches.splice(matchingIndex, 1);
+    removeOverlay();
 
     if (response) {
       cache.set(url, response);
@@ -634,6 +623,14 @@ export async function renderOpeningExplorer() {
   const prevOpeningExplorer = document.getElementById(openingExplorerId);
 
   if (prevOpeningExplorer) {
+    if (currentFetches.length > 0) {
+      currentFetches.forEach((item) => {
+        item.controller.abort();
+      });
+
+      currentFetches = [];
+    }
+
     /* Remove all arrows on re-render,
     since moveRow's mouseleave won't fire if moveRow is removed from DOM. */
     document.dispatchEvent(new CustomEvent('removeAllArrows'));
