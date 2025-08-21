@@ -1,4 +1,4 @@
-const featureIds = ['hideRatings', 'hideOpponent', 'hideFlags', 'hideOwnFlagOnHome', 'analyzeOnLichess', 'openingExplorer'] as const;
+const featureIds = ['hideRatings', 'hideOpponent', 'hideFlags', 'hideOwnFlagOnHome', 'analyzeOnLichess', 'openingExplorer', 'analysisLinkInArchive'] as const;
 
 export type FeatureId = typeof featureIds[number];
 

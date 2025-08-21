@@ -28,6 +28,10 @@ const features: {
   id: 'openingExplorer',
   title: 'Opening Explorer',
   description: 'Add Lichess\'s opening explorer to Analysis page',
+}, {
+  id: 'analysisLinkInArchive',
+  title: 'Analysis Link in Archive Games',
+  description: 'Add a link in archive games to go straight to Analysis, not Game Review',
 }];
 
 export default features;

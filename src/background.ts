@@ -7,6 +7,7 @@ const initialStorage: ExtStorage = {
   hideOwnFlagOnHome: false,
   analyzeOnLichess: false,
   openingExplorer: false,
+  analysisLinkInArchive: false,
   database: 'lichess',
   databaseOptions: {
     lichess: {
@@ -99,6 +100,14 @@ browser.runtime.onConnect.addListener((p) => {
         Promise.all(tabs.map(({ id }) => browser.scripting.removeCSS(getCSSDetails('openingExplorer', id))));
         break;
 
+      case 'analysisLinkInArchive':
+        Promise.all(tabs.map(({ id }) => browser.scripting.insertCSS(getCSSDetails('analysisLinkInArchive', id))));
+        break;
+
+      case 'hideAnalysisLinkInArchive':
+        Promise.all(tabs.map(({ id }) => browser.scripting.removeCSS(getCSSDetails('analysisLinkInArchive', id))));
+        break;
+
       default:
         throw new Error(`Unhandled message.command: ${msgTyped.command}`);
     }
@@ -110,8 +119,8 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   const [changedKey, { newValue }] = entries[0]!;
 
   if (isFeatureId(changedKey)) {
-    if (changedKey !== 'hideOpponent' && changedKey !== 'analyzeOnLichess') {
-    // changes to hideOpponent and analyzeOnLichess are handled by content script
+    if (!['hideOpponent', 'analyzeOnLichess', 'analysisLinkInArchive'].includes(changedKey)) {
+    // changes to hideOpponent, analyzeOnLichess and analysisLinkInArchive are handled by content script
       const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
 
       Promise.all(tabs.map(({ id }) =>

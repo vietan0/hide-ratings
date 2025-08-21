@@ -3,6 +3,7 @@ import isGameOver from './isGameOver';
 import { isOptionsOpen, openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
 import { type ExtStorage, isFeatureId } from './storageTypes';
 import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
+import { addAnalysisLinks, analysisLinkInArchiveRegex, removeAnalysisLinks } from './analysisLinkInArchive';
 
 let port: browser.runtime.Port;
 
@@ -157,57 +158,150 @@ const sidebarObserver = new MutationObserver(async (mutationList) => {
   }
 });
 
-async function connectToBackground() {
-  port = browser.runtime.connect({ name: 'my-content-script-port' });
-  const { hideRatings, hideOpponent, hideFlags, hideOwnFlagOnHome, analyzeOnLichess, openingExplorer } = await browser.storage.local.get() as ExtStorage;
+const archiveObserver = new MutationObserver((mutationList) => {
+  for (const mutation of mutationList) {
+    if (mutation.addedNodes.length > 0) {
+      if (mutation.target.nodeType === 1) {
+        const target = mutation.target as Element;
 
-  if (hideRatings) {
-    port.postMessage({ command: 'hideRatings' });
-  }
+        if (window.location.href.match(/chess.com\/member\/[\w-]+$/)) {
+          if (target.classList.contains('archive-component')) {
+            const firstAddedNode = mutation.addedNodes.item(0)!;
 
-  if (hideOpponent) {
-    const topPlayerComp = document.querySelector('.player-component.player-top');
+            if (firstAddedNode.nodeType === 1
+              && (firstAddedNode as HTMLElement).getAttribute('header-title')! === 'Game History'
+            ) {
+              // 1. visit /member/x
+              addAnalysisLinks();
 
-    if (topPlayerComp) {
-      hideOrUnhide(port);
+              return;
+            }
+          }
+        }
 
-      topPlayerCompObserver.observe(topPlayerComp, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ['class'],
-        attributeOldValue: true,
-      });
+        if (target.id === 'profile-main') {
+          // 1. visit /member/x/games
+          // 2. visit /member/x/stats/bullet
+          // 3. in /member/x/games and switch tab between Overview to Games
+          const archiveTable = document.querySelector('.archive-table');
+
+          if (!archiveTable) {
+            addAnalysisLinks();
+
+            return;
+          }
+        }
+
+        if (target.classList.contains('archive-header-header')) {
+          // 1. in /member/x/games and switch tab between Recent-Daily-Live-Bot and either the fromTab or toTab has 0 games
+          addAnalysisLinks();
+
+          return;
+        }
+
+        if (target.tagName === 'TBODY') {
+          // 1. visit /home
+          // 2. in /member/x/games and switch tab between Recent-Daily-Live-Bot and both fromTab or toTab has games
+          // 3. switch from /member/x/stats/[A to B]
+          addAnalysisLinks();
+
+          return;
+        }
+
+        else if (window.location.href.match(/chess.com\/games\/archive/)) {
+          // https://www.chess.com/games/archive
+          // should already get added by first page load
+          archiveObserver.disconnect();
+        }
+      }
     }
   }
+});
 
-  if (hideFlags) {
-    port.postMessage({ command: 'hideFlags' });
-  }
+function startAnalysisLinkInArchive() {
+  port.postMessage({ command: 'analysisLinkInArchive' });
+  addAnalysisLinks();
+  const main = document.querySelector('main.layout-component')!;
+  archiveObserver.observe(main, { childList: true, subtree: true });
+}
 
-  if (hideOwnFlagOnHome) {
-    port.postMessage({ command: 'hideOwnFlagOnHome' });
-  }
+let retryCount = 0;
 
-  if (analyzeOnLichess) {
-    if (window.location.href.match(analyzeOnLichessRegex)) {
-      observeForAnalyzeOnLichess();
+async function content() {
+  try {
+    const {
+      hideRatings,
+      hideOpponent,
+      hideFlags,
+      hideOwnFlagOnHome,
+      analyzeOnLichess,
+      openingExplorer,
+      analysisLinkInArchive,
+    } = await browser.storage.local.get() as ExtStorage;
+
+    if (hideRatings) {
+      port.postMessage({ command: 'hideRatings' });
+    }
+
+    if (hideOpponent) {
+      const topPlayerComp = document.querySelector('.player-component.player-top');
+
+      if (topPlayerComp) {
+        hideOrUnhide(port);
+
+        topPlayerCompObserver.observe(topPlayerComp, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ['class'],
+          attributeOldValue: true,
+        });
+      }
+    }
+
+    if (hideFlags) {
+      port.postMessage({ command: 'hideFlags' });
+    }
+
+    if (hideOwnFlagOnHome) {
+      port.postMessage({ command: 'hideOwnFlagOnHome' });
+    }
+
+    if (analyzeOnLichess) {
+      if (window.location.href.match(analyzeOnLichessRegex)) {
+        observeForAnalyzeOnLichess();
+      }
+    }
+
+    if (openingExplorer) {
+      if (window.location.href.match(openingExplorerRegex)) {
+        startOpeningExplorer();
+        sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
+      }
+    }
+
+    if (analysisLinkInArchive) {
+      if (window.location.href.match(analysisLinkInArchiveRegex)) {
+        startAnalysisLinkInArchive();
+      }
     }
   }
-
-  if (openingExplorer) {
-    // reminder: code in content script will be invoked every time file is saved in dev mode
-    if (window.location.href.match(openingExplorerRegex)) {
-      // 1. check for first appearance (observer can't catch)
-      startOpeningExplorer();
-      // 2. observing for subsequent appearances
-      sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
+  catch (err) {
+    if ((err as Error).message === 'An unexpected error occurred') {
+      /* chess.com's weird error that can interrupt content script. Retry up to 5 times. */
+      if (retryCount <= 5) {
+        setTimeout(() => {
+          content();
+          retryCount++;
+        }, 500);
+      }
     }
   }
 }
 
-// Call connect when the content script loads
-connectToBackground();
+// connect when the content script loads
+port = browser.runtime.connect({ name: 'my-content-script-port' });
+content();
 
 browser.storage.local.onChanged.addListener(async (changes) => {
   const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
@@ -236,7 +330,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
       }
     }
 
-    if (changedKey === 'analyzeOnLichess') {
+    else if (changedKey === 'analyzeOnLichess') {
       if (newValue) {
         if (window.location.href.match(analyzeOnLichessRegex)) {
           observeForAnalyzeOnLichess();
@@ -252,7 +346,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
       }
     }
 
-    if (changedKey === 'openingExplorer') {
+    else if (changedKey === 'openingExplorer') {
       if (newValue) {
         if (window.location.href.match(openingExplorerRegex)) {
           startOpeningExplorer();
@@ -264,6 +358,19 @@ browser.storage.local.onChanged.addListener(async (changes) => {
         document.getElementById(openingExplorerId)?.remove();
         sidebarObserver.disconnect();
         wcBoardObserver.disconnect();
+      }
+    }
+
+    else if (changedKey === 'analysisLinkInArchive') {
+      if (newValue) {
+        if (window.location.href.match(analysisLinkInArchiveRegex)) {
+          startAnalysisLinkInArchive();
+        }
+      }
+      else {
+        port.postMessage({ command: 'hideAnalysisLinkInArchive' });
+        removeAnalysisLinks();
+        archiveObserver.disconnect();
       }
     }
   }

@@ -1,0 +1,27 @@
+.ccTweaks_analysisCell {
+  padding: 0 !important;
+  min-width: 40px;
+}
+
+.ccTweaks_analysisCell a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 40px;
+  min-height: 40px;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-inline: auto;
+}
+
+.ccTweaks_analysisCell a svg {
+  fill: var(--color-icon-subtle);
+}
+
+.ccTweaks_analysisCell a:hover svg {
+  fill: var(--color-icon-standard);
+}
