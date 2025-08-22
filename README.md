@@ -2,7 +2,7 @@
 
 [![Firefox Addons Link](https://img.shields.io/badge/Firefox-1.6.2-blue?style=flat&logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
 
-Chess.com Tweaks is a Firefox extension that helps you customize your Chess.com experience by hiding distracting elements like player ratings, opponent details, and country flags. It can also send your games to Lichess analysis, and integrate the Lichess opening explorer directly into the Chess.com analysis page.
+Chess.com Tweaks is a Firefox extension that enhances your Chess.com experience by decluttering the interface and providing additional analysis tools.
 
 [<img src="https://extensionworkshop.com/assets/img/documentation/publish/get-the-addon-178x60px.dad84b42.png" alt="">](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
 
@@ -51,3 +51,9 @@ Add buttons that send your finished games to the Lichess analysis page
 Add Lichess's opening explorer to Analysis page
 
 ![opening explorer](./screenshots/openingExplorer.jpg)
+
+### Analysis Link in Archive Games
+
+Add a link in archive games to go straight to Analysis, not Game Review
+
+![analysis link in archive games](./screenshots/analysisLinkInArchive.jpg)
