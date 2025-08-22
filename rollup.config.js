@@ -1,5 +1,6 @@
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
 
 export default [
   {
@@ -8,7 +9,7 @@ export default [
       file: 'dist/content.js',
       sourcemap: true,
     },
-    plugins: [typescript(), terser()],
+    plugins: [typescript(), nodeResolve(), terser()],
   },
   {
     input: 'src/lichessContent.ts',

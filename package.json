@@ -11,13 +11,16 @@
     "wlint": "web-ext lint"
   },
   "dependencies": {
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "lodash-es": "^4.17.21"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.22.0",
+    "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/firefox-webext-browser": "^120.0.4",
+    "@types/lodash-es": "^4.17.12",
     "eslint": "^9.6.0",
     "eslint-plugin-format": "^0.1.2",
     "rollup": "^4.45.0",

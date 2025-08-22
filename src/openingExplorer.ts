@@ -1,6 +1,8 @@
+import debounce from 'lodash-es/debounce';
 import capitalize from './capitalize';
 import renderSvg from './renderSvg';
 import { type ExtStorage, type Rating, type TimeControl, ratings, timeControls } from './storageTypes';
+import getFenFromUrl from './getFenFromUrl';
 
 type Opening = {
   eco: string;
@@ -18,7 +20,7 @@ interface Move {
   opening: Opening;
 }
 
-interface Response {
+interface LiRes {
   white: number;
   draws: number;
   black: number;
@@ -33,9 +35,26 @@ export const contentId = 'content';
 const optionsId = 'options';
 const headerId = 'header';
 const overlayClass = 'overlay';
-const cache = new Map<string, Response>();
+const cache = new Map<string, LiRes>();
 let fen = '';
-let currentFetches: { controller: AbortController; fen: string }[] = [];
+let liRes: LiRes | undefined;
+const wait = 400;
+
+function addOverlay() {
+  const overlay = document.createElement('div');
+  overlay.className = overlayClass;
+  const openingExplorer = document.getElementById(openingExplorerId);
+
+  if (openingExplorer && document.getElementsByClassName(overlayClass).length === 0) {
+    openingExplorer.append(overlay);
+  }
+}
+
+function removeOverlay() {
+  for (const div of document.getElementsByClassName(overlayClass)) {
+    div.remove();
+  }
+}
 
 export function isOptionsOpen() {
   const openingExplorer = document.getElementById(openingExplorerId);
@@ -93,17 +112,55 @@ async function renderHeader() {
   return header;
 }
 
-async function renderContent() {
-  async function fetchLichess(fen: string) {
-    function removeOverlay() {
-      if (currentFetches.length === 0) {
-        // only remove the overlay if there are no fetch requests going on
-        for (const div of document.getElementsByClassName(overlayClass)) {
-          div.remove();
-        }
-      }
-    }
+let timeoutId: number | undefined;
 
+async function fetchLichess(url: string) {
+  const response = await fetch(url)
+    .then(r => r.json())
+    .catch(err => console.error('There has been an error fetching from Lichess', err)) as LiRes | undefined;
+
+  if (response) {
+    cache.set(url, response);
+  }
+
+  if (timeoutId) {
+    liRes = response;
+    document.dispatchEvent(new CustomEvent('liResChange'));
+  }
+  else {
+    // timeoutId is undefined when invoked -> called after the wait period ends -> trailing-edge confirmed
+    // Bug: when a streak of debounced calls ends in a position with a cached liRes (e.g. quickly ArrowLeft and ArrowRight before stopping on a visited position), but then the trailing-edge fetch changes liRes one last time, making liRes one/few moves ahead of the current board
+    // Solution: When it's a trailing-edge invocation, only change liRes if fen in url match fen on board, ignore if not.
+    if (getFenFromUrl(url) === fen) {
+      liRes = response;
+      document.dispatchEvent(new CustomEvent('liResChange'));
+    }
+  }
+}
+
+/**
+ * Return a version of `debouncedFn` that will
+ * - Add overlay (if there isn't one) on every invocation.
+ * - Remove overlay when the timer runs out.
+ */
+function timeDebounced<T extends (...args: any) => any>(debouncedFn: T) {
+  return async function (this: any, ...args: Parameters<T>) {
+    clearTimeout(timeoutId);
+    addOverlay();
+
+    timeoutId = setTimeout(() => {
+      timeoutId = undefined;
+      removeOverlay();
+    }, wait);
+
+    await debouncedFn.call(this, ...args);
+  };
+}
+
+const timeDebouncedFetchLichess = timeDebounced(debounce(fetchLichess, wait, { leading: true, trailing: true }));
+
+async function fetchOrCache() {
+  async function constructURL() {
     const { database, databaseOptions } = await browser.storage.local.get() as ExtStorage;
     let url = '';
 
@@ -120,51 +177,29 @@ async function renderContent() {
       url = `https://explorer.lichess.ovh/masters?fen=${encodeURIComponent(fen)}&topGames=0${since}${until}`;
     }
 
-    const controller = new AbortController();
-
-    if (!currentFetches.find(x => x.fen === fen)) {
-      // no duplicate
-      currentFetches.push({ controller, fen });
-    }
-
-    const resInCache = cache.get(url);
-
-    if (resInCache) {
-      const matchingIndex = currentFetches.findIndex(x => x.controller === controller);
-      currentFetches.splice(matchingIndex, 1);
-      removeOverlay();
-
-      return resInCache;
-    }
-
-    // add overlay before calling await fetch()
-    const overlay = document.createElement('div');
-    overlay.className = overlayClass;
-    const openingExplorer = document.getElementById(openingExplorerId);
-
-    if (openingExplorer && document.getElementsByClassName(overlayClass).length === 0) {
-      openingExplorer.append(overlay);
-    }
-
-    const response = await fetch(url, { signal: controller.signal })
-      .then(r => r.json())
-      .catch((err) => {
-        if (err.name !== 'AbortError')
-          console.error('There has been an error fetching from Lichess', err);
-      }) as Response | undefined;
-
-    const matchingIndex = currentFetches.findIndex(x => x.controller === controller);
-    currentFetches.splice(matchingIndex, 1);
-    removeOverlay();
-
-    if (response) {
-      cache.set(url, response);
-    }
-
-    return response;
+    return url;
   }
 
-  function renderTable(res: Response) {
+  const url = await constructURL();
+  const liResInCache = cache.get(url);
+
+  if (liResInCache) {
+    liRes = liResInCache;
+    document.dispatchEvent(new CustomEvent('liResChange'));
+    removeOverlay();
+  }
+  else {
+    await timeDebouncedFetchLichess(url);
+  }
+}
+
+async function updateLiRes() {
+  document.dispatchEvent(new CustomEvent('requestFen'));
+  await fetchOrCache();
+}
+
+function renderContent() {
+  function renderTable(res: LiRes) {
     function renderMoveRow(move: Move, total: number, isTotalRow = false) {
       function renderPercentageBar(white: number, draws: number, black: number) {
         function renderPercentageText(percentage: number) {
@@ -227,7 +262,6 @@ async function renderContent() {
       else {
         moveRow.onclick = async () => {
           document.dispatchEvent(new CustomEvent('sendUci', { detail: move.uci }));
-          document.dispatchEvent(new CustomEvent('requestFen'));
         };
 
         moveRow.onmouseenter = () => {
@@ -296,14 +330,11 @@ async function renderContent() {
     return p;
   }
 
-  document.dispatchEvent(new CustomEvent('requestFen'));
-  const res = await fetchLichess(fen);
-
-  if (res) {
+  if (liRes) {
     const content = document.createElement('div');
     content.id = contentId;
-    const noGameFound = res.white === 0 && res.black === 0 && res.draws === 0;
-    content.append(noGameFound ? renderNoGameFound() : renderTable(res));
+    const noGameFound = liRes.white === 0 && liRes.black === 0 && liRes.draws === 0;
+    content.append(noGameFound ? renderNoGameFound() : renderTable(liRes));
 
     return content;
   }
@@ -620,38 +651,57 @@ export async function renderOpeningExplorer() {
     document.ccTweaks_responseFenListenerAdded = true;
   }
 
+  if (!document.ccTweaks_liResChangeListenerAdded) {
+    document.addEventListener('liResChange', async () => {
+      // render/re-render content whenever liRes updates
+      const prevView = document.querySelector(`#${contentId}, #${optionsId}`);
+      const content = renderContent();
+
+      if (!prevView) {
+        // first render
+        if (content) {
+          const openingExplorer = document.getElementById(openingExplorerId)!;
+          openingExplorer.append(content);
+        }
+      }
+      else {
+        if (content) {
+          prevView.insertAdjacentElement('beforebegin', content);
+          prevView.remove();
+        }
+      }
+    });
+
+    document.ccTweaks_liResChangeListenerAdded = true;
+  }
+
   const prevOpeningExplorer = document.getElementById(openingExplorerId);
 
   if (prevOpeningExplorer) {
-    if (currentFetches.length > 0) {
-      currentFetches.forEach((item) => {
-        item.controller.abort();
-      });
-
-      currentFetches = [];
-    }
-
     /* Remove all arrows on re-render,
     since moveRow's mouseleave won't fire if moveRow is removed from DOM. */
     document.dispatchEvent(new CustomEvent('removeAllArrows'));
-    // re-render each child separately, not the whole div to avoid flashing
-    const currHeader = await renderHeader();
-    const currView = isOptionsOpen() ? await renderOptions() : await renderContent();
-    if (!currView)
-      return; // fetch was aborted, cancel the rerender
+
+    // Re-render each child separately, not the whole div to avoid flashing
+    if (!isOptionsOpen()) {
+      await updateLiRes();
+    }
+    else {
+      const currOptions = await renderOptions();
+      const prevView = prevOpeningExplorer.querySelector(`#${contentId}, #${optionsId}`)!;
+      prevView.insertAdjacentElement('beforebegin', currOptions);
+      prevView.remove();
+    }
 
     /* Call querySelector() after all the awaits,
       because if a render occurs before the awaits finish,
-      oldHeader/oldView would be a stale object (i.e. no parent), making insertAdjacentElement() fail.
+      prevHeader/prevView would be a stale object (i.e. no parent), making insertAdjacentElement() fail.
       - From MDN: "The beforebegin and afterend positions work only if the node is in a tree and has an element parent."
      */
+    const currHeader = await renderHeader();
     const prevHeader = prevOpeningExplorer.querySelector(`#${headerId}`)!;
-    const prevView = prevOpeningExplorer.querySelector(`#${contentId}, #${optionsId}`)!;
-
     prevHeader.insertAdjacentElement('beforebegin', currHeader);
     prevHeader.remove();
-    prevView.insertAdjacentElement('beforebegin', currView);
-    prevView.remove();
 
     return;
   }
@@ -681,14 +731,8 @@ export async function renderOpeningExplorer() {
   loadingContainer.append(loadingIcon);
   openingExplorer.append(loadingContainer);
 
-  const header = await renderHeader();
-  openingExplorer.append(header);
-  const content = await renderContent();
-
-  if (content) {
-    openingExplorer.append(content);
-  }
-
+  openingExplorer.append(await renderHeader());
+  await updateLiRes();
   loadingContainer.remove();
 }
 
