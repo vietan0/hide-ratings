@@ -1,7 +1,5 @@
 import typescript from '@rollup/plugin-typescript';
-import { nodeResolve } from '@rollup/plugin-node-resolve';
-import commonjs from '@rollup/plugin-commonjs';
-import json from '@rollup/plugin-json';
+import terser from '@rollup/plugin-terser';
 
 export default [
   {
@@ -10,7 +8,7 @@ export default [
       file: 'dist/content.js',
       sourcemap: true,
     },
-    plugins: [typescript()],
+    plugins: [typescript(), terser()],
   },
   {
     input: 'src/lichessContent.ts',
@@ -18,7 +16,7 @@ export default [
       file: 'dist/lichessContent.js',
       sourcemap: true,
     },
-    plugins: [typescript()],
+    plugins: [typescript(), terser()],
   },
   {
     input: 'src/mainWorldScript.ts',
@@ -26,7 +24,7 @@ export default [
       file: 'dist/mainWorldScript.js',
       sourcemap: true,
     },
-    plugins: [typescript()],
+    plugins: [typescript(), terser()],
   },
   {
     input: 'src/background.ts',
@@ -34,7 +32,7 @@ export default [
       file: 'dist/background.js',
       sourcemap: true,
     },
-    plugins: [typescript()],
+    plugins: [typescript(), terser()],
   },
   {
     input: 'src/popup/index.ts',
@@ -42,14 +40,6 @@ export default [
       file: 'dist/popup.js',
       sourcemap: true,
     },
-    plugins: [typescript()],
-  },
-  {
-    input: 'sign.ts',
-    output: {
-      file: 'dist/sign.js',
-      sourcemap: true,
-    },
-    plugins: [typescript(), json(), commonjs(), nodeResolve()],
+    plugins: [typescript(), terser()],
   },
 ];
