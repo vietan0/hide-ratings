@@ -22,12 +22,9 @@ async function handleClick(e: MouseEvent) {
 
 async function renderBtns() {
   for (const { id, title, description } of features) {
-    const div = document.createElement('div');
-    div.id = `container-${id}`;
-    div.className = 'border-b-[1px] border-zinc-700';
     const btn = document.createElement('button');
     btn.id = id;
-    btn.className = 'flex justify-between items-center cursor-pointer w-full px-3 py-3 min-h-[37px] hover:bg-zinc-700 active:bg-zinc-600';
+    btn.className = 'flex justify-between items-center cursor-pointer w-full p-3 hover:bg-zinc-700 active:bg-zinc-600 border-zinc-700 border-b-[1px] last:border-b-0';
 
     const infoDiv = document.createElement('div');
     infoDiv.className = 'flex flex-col gap-0.5 items-start';
@@ -44,9 +41,7 @@ async function renderBtns() {
 
     renderSwitch(id, btn);
     btn.onclick = handleClick;
-
-    div.append(btn);
-    document.getElementById('container')!.append(div);
+    document.getElementsByTagName('main').item(0)!.append(btn);
   }
 }
 
@@ -60,8 +55,7 @@ function updateSwitchIcon(featureId: FeatureId) {
 renderBtns();
 
 async function renderFooterSvg() {
-  const container = document.getElementById('container')!;
-  const footer = container.nextElementSibling!;
+  const footer = document.getElementsByTagName('footer').item(0)!;
   const footerLink = footer.getElementsByTagName('a').item(0)!;
   const svg = await renderSvg('src/icons/MdiLaunch.svg');
   svg.classList.add('w-3', 'h-auto', 'inline-block', 'object-contain');

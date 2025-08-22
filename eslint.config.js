@@ -7,7 +7,7 @@ export default antfu({
   rules: {
     'no-console': 'off',
     'no-undef': 'off',
-    'no-unused-vars': 'warn',
+    'no-unused-vars': 'off',
     'unused-imports/no-unused-imports': 'warn',
     'unused-imports/no-unused-vars': 'warn',
     'style/padding-line-between-statements': [

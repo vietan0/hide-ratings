@@ -1,4 +1,4 @@
-/*! tailwindcss v4.1.11 | MIT License | https://tailwindcss.com */
+/*! tailwindcss v4.1.12 | MIT License | https://tailwindcss.com */
 @layer properties;
 @layer theme, base, components, utilities;
 @layer theme {
@@ -217,6 +217,9 @@
   ::-webkit-datetime-edit-meridiem-field {
     padding-block: 0;
   }
+  ::-webkit-calendar-picker-indicator {
+    line-height: 1;
+  }
   :-moz-ui-invalid {
     box-shadow: none;
   }
@@ -234,6 +237,21 @@
   }
 }
 @layer utilities {
+  .fixed {
+    position: fixed;
+  }
+  .sticky {
+    position: sticky;
+  }
+  .top-0 {
+    top: calc(var(--spacing) * 0);
+  }
+  .bottom-0 {
+    bottom: calc(var(--spacing) * 0);
+  }
+  .mb-3 {
+    margin-bottom: calc(var(--spacing) * 3);
+  }
   .flex {
     display: flex;
   }
@@ -243,8 +261,8 @@
   .h-auto {
     height: auto;
   }
-  .min-h-\[37px\] {
-    min-height: 37px;
+  .max-h-\[600px\] {
+    max-height: 600px;
   }
   .w-3 {
     width: calc(var(--spacing) * 3);
@@ -282,6 +300,13 @@
   .gap-2 {
     gap: calc(var(--spacing) * 2);
   }
+  .overflow-auto {
+    overflow: auto;
+  }
+  .border-t-\[1px\] {
+    border-top-style: var(--tw-border-style);
+    border-top-width: 1px;
+  }
   .border-b-\[1px\] {
     border-bottom-style: var(--tw-border-style);
     border-bottom-width: 1px;
@@ -289,20 +314,35 @@
   .border-zinc-700 {
     border-color: var(--color-zinc-700);
   }
+  .bg-inherit {
+    background-color: inherit;
+  }
   .bg-zinc-800 {
     background-color: var(--color-zinc-800);
   }
   .object-contain {
     object-fit: contain;
   }
-  .p-2 {
-    padding: calc(var(--spacing) * 2);
+  .p-3 {
+    padding: calc(var(--spacing) * 3);
   }
-  .px-3 {
-    padding-inline: calc(var(--spacing) * 3);
+  .p-4 {
+    padding: calc(var(--spacing) * 4);
+  }
+  .px-2 {
+    padding-inline: calc(var(--spacing) * 2);
+  }
+  .px-4 {
+    padding-inline: calc(var(--spacing) * 4);
   }
   .py-3 {
     padding-block: calc(var(--spacing) * 3);
+  }
+  .pb-0 {
+    padding-bottom: calc(var(--spacing) * 0);
+  }
+  .pb-\[41px\] {
+    padding-bottom: 41px;
   }
   .text-sm {
     font-size: var(--text-sm);
@@ -327,6 +367,12 @@
   }
   .text-zinc-500 {
     color: var(--color-zinc-500);
+  }
+  .last\:border-b-0 {
+    &:last-child {
+      border-bottom-style: var(--tw-border-style);
+      border-bottom-width: 0px;
+    }
   }
   .hover\:bg-zinc-700 {
     &:hover {

@@ -7,17 +7,18 @@
   <link rel="stylesheet" href="index.css">
   <title>Chess.com Tweaks</title>
 </head>
-<body class="text-white bg-zinc-800 text-sm p-2 min-w-[500px]">
-  <div class="flex p-2 gap-2 items-center">
+<body class="text-white bg-zinc-800 text-sm min-w-[500px]">
+  <header class="flex p-4 pb-0 mb-3 gap-2 items-center sticky top-0 bg-inherit">
     <img src="../icons/chesslogo.png" alt="" class="w-5 h-auto object-contain">
     <h1 class="font-bold">Chess.com Tweaks</h1>
-  </div>
-  <div id="container" class="flex flex-col"></div>
-  <div class="p-2">
+  </header>
+  <main class="flex flex-col px-2 pb-[41px] overflow-auto max-h-[600px]">
+  </main>
+  <footer class="fixed bottom-0 px-4 py-3 flex flex-col bg-inherit w-full border-t-[1px] border-zinc-700">
     <a href="https://github.com/vietan0/hide-ratings#features" target="_blank" class="text-xs text-zinc-400 hover:underline">
       <span>Features info with images</span>
     </a>
-  </div>
+  </footer>
   <script type="module" src="/dist/popup.js"></script>
 </body>
 </html>
