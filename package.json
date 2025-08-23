@@ -3,11 +3,12 @@
   "version": "1.7.0",
   "scripts": {
     "build": "web-ext build",
-    "dev": "web-ext run --devtools --start-url www.chess.com --start-url addons.mozilla.org/en-US/firefox/addon/ublock-origin",
+    "dev": "web-ext run --devtools --start-url www.chess.com",
     "lint": "eslint .",
     "rb": "rollup --config",
     "rw": "rollup --config -w",
-    "sign": "web-ext sign"
+    "sign": "web-ext sign",
+    "wlint": "web-ext lint"
   },
   "dependencies": {
     "dotenv": "^16.4.5"
