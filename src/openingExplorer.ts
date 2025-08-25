@@ -125,16 +125,14 @@ async function fetchLichess(url: string) {
   }
 
   if (timeoutId) {
-    liRes = response;
-    document.dispatchEvent(new CustomEvent('liResChange'));
+    updateLiResAndInsertContent(response);
   }
   else {
     // timeoutId is undefined when invoked -> called after the wait period ends -> trailing-edge confirmed
     // Bug: when a streak of debounced calls ends in a position with a cached liRes (e.g. quickly ArrowLeft and ArrowRight before stopping on a visited position), but then the trailing-edge fetch changes liRes one last time, making liRes one/few moves ahead of the current board
     // Solution: When it's a trailing-edge invocation, only change liRes if fen in url match fen on board, ignore if not.
     if (getFenFromUrl(url) === fen) {
-      liRes = response;
-      document.dispatchEvent(new CustomEvent('liResChange'));
+      updateLiResAndInsertContent(response);
     }
   }
 }
@@ -185,8 +183,7 @@ async function fetchOrCache() {
   const liResInCache = cache.get(url);
 
   if (liResInCache) {
-    liRes = liResInCache;
-    document.dispatchEvent(new CustomEvent('liResChange'));
+    updateLiResAndInsertContent(liResInCache);
     removeOverlay();
   }
   else {
@@ -194,163 +191,187 @@ async function fetchOrCache() {
   }
 }
 
-async function updateFenAndLiRes() {
+async function updateFen() {
   document.dispatchEvent(new CustomEvent('requestFen'));
 
   if (maxDepthReached(fen)) {
-    liRes = null;
-    document.dispatchEvent(new CustomEvent('liResChange'));
+    updateLiResAndInsertContent(null);
   }
   else {
     await fetchOrCache();
   }
 }
 
-function renderContent() {
-  function renderTable(res: LiRes) {
-    function renderMoveRow(move: Move, total: number, isTotalRow = false) {
-      function renderPercentageBar(white: number, draws: number, black: number) {
-        function renderPercentageText(percentage: number) {
-          if (percentage >= 15)
-            return `${String(percentage)}%`;
-          if (percentage >= 10)
-            return String(percentage);
+function updateLiResAndInsertContent(response: typeof liRes) {
+  function renderContent() {
+    function renderTable(res: LiRes) {
+      function renderMoveRow(move: Move, total: number, isTotalRow = false) {
+        function renderPercentageBar(white: number, draws: number, black: number) {
+          function renderPercentageText(percentage: number) {
+            if (percentage >= 15)
+              return `${String(percentage)}%`;
+            if (percentage >= 10)
+              return String(percentage);
 
-          return '';
+            return '';
+          }
+
+          const total = white + draws + black;
+          const wp = Math.round(white * 100 / total);
+          const bp = Math.round(black * 100 / total);
+          const dp = 100 - wp - bp;
+          const cell = document.createElement('td');
+          const percentageBar = document.createElement('div');
+          const whiteBar = document.createElement('span');
+          const drawBar = document.createElement('span');
+          const blackBar = document.createElement('span');
+
+          whiteBar.textContent = renderPercentageText(wp);
+          drawBar.textContent = renderPercentageText(dp);
+          blackBar.textContent = renderPercentageText(bp);
+
+          whiteBar.style = /* style */`
+            padding-inline-start: ${wp >= 10 && wp !== 100 ? '0.5rem' : '0'};
+            background-color: var(--color-bg-white-eval); 
+            color: var(--color-text-white-eval);
+            width: ${wp}%;
+            text-align: ${wp === 100 ? 'center' : 'start'};
+          `;
+
+          drawBar.style = /* style */`
+            background-color: var(--color-bg-draw-eval); 
+            color: var(--color-text-draw-eval);
+            width: ${dp}%;
+            text-align: center;
+          `;
+
+          blackBar.style = /* style */`
+            padding-inline-end: ${bp >= 10 && bp !== 100 ? '0.5rem' : '0'};
+            background-color: var(--color-bg-black-eval); 
+            color: var(--color-text-black-eval);
+            width: ${bp}%;
+            text-align: ${bp === 100 ? 'center' : 'end'};
+          `;
+
+          cell.append(percentageBar);
+          percentageBar.append(whiteBar, drawBar, blackBar);
+
+          return cell;
         }
 
-        const total = white + draws + black;
-        const wp = Math.round(white * 100 / total);
-        const bp = Math.round(black * 100 / total);
-        const dp = 100 - wp - bp;
-        const cell = document.createElement('td');
-        const percentageBar = document.createElement('div');
-        const whiteBar = document.createElement('span');
-        const drawBar = document.createElement('span');
-        const blackBar = document.createElement('span');
+        const moveRow = document.createElement('tr');
 
-        whiteBar.textContent = renderPercentageText(wp);
-        drawBar.textContent = renderPercentageText(dp);
-        blackBar.textContent = renderPercentageText(bp);
+        if (isTotalRow) {
+          moveRow.classList.add('totalRow');
+        }
+        else {
+          moveRow.onclick = async () => {
+            document.dispatchEvent(new CustomEvent('sendUci', { detail: move.uci }));
+          };
 
-        whiteBar.style = /* style */`
-          padding-inline-start: ${wp >= 10 && wp !== 100 ? '0.5rem' : '0'};
-          background-color: var(--color-bg-white-eval); 
-          color: var(--color-text-white-eval);
-          width: ${wp}%;
-          text-align: ${wp === 100 ? 'center' : 'start'};
-        `;
+          moveRow.onmouseenter = () => {
+            document.dispatchEvent(new CustomEvent('addArrow', { detail: move.uci }));
+          };
 
-        drawBar.style = /* style */`
-          background-color: var(--color-bg-draw-eval); 
-          color: var(--color-text-draw-eval);
-          width: ${dp}%;
-          text-align: center;
-        `;
+          moveRow.onmouseleave = () => {
+            document.dispatchEvent(new CustomEvent('removeArrow', { detail: move.uci }));
+          };
+        }
 
-        blackBar.style = /* style */`
-          padding-inline-end: ${bp >= 10 && bp !== 100 ? '0.5rem' : '0'};
-          background-color: var(--color-bg-black-eval); 
-          color: var(--color-text-black-eval);
-          width: ${bp}%;
-          text-align: ${bp === 100 ? 'center' : 'end'};
-        `;
+        const moveTotal = move.white + move.draws + move.black;
+        const sanCell = document.createElement('td');
+        sanCell.textContent = move.san;
 
-        cell.append(percentageBar);
-        percentageBar.append(whiteBar, drawBar, blackBar);
+        const percCell = document.createElement('td');
+        const perc = Math.round(moveTotal * 100 / total);
+        percCell.textContent = `${perc}%`;
 
-        return cell;
+        const moveTotalCell = document.createElement('td');
+        moveTotalCell.textContent = new Intl.NumberFormat().format(moveTotal);
+
+        moveRow.append(sanCell, percCell, moveTotalCell);
+        moveRow.append(renderPercentageBar(move.white, move.draws, move.black));
+
+        return moveRow;
       }
 
-      const moveRow = document.createElement('tr');
+      const table = document.createElement('table');
+      const tbody = document.createElement('tbody');
+      const total = res.white + res.draws + res.black;
+      const moveRows = res.moves.map(move => renderMoveRow(move, total));
+      table.append(tbody);
+      tbody.append(...moveRows);
 
-      if (isTotalRow) {
-        moveRow.classList.add('totalRow');
+      if (res.moves.length > 1) {
+        const totalRow = renderMoveRow({
+          averageRating: 0,
+          white: res.white,
+          draws: res.draws,
+          black: res.black,
+          game: null,
+          opening: null,
+          san: 'Σ',
+          uci: 'Σ',
+        }, total, true);
+
+        tbody.append(totalRow);
       }
-      else {
-        moveRow.onclick = async () => {
-          document.dispatchEvent(new CustomEvent('sendUci', { detail: move.uci }));
-        };
 
-        moveRow.onmouseenter = () => {
-          document.dispatchEvent(new CustomEvent('addArrow', { detail: move.uci }));
-        };
-
-        moveRow.onmouseleave = () => {
-          document.dispatchEvent(new CustomEvent('removeArrow', { detail: move.uci }));
-        };
-      }
-
-      const moveTotal = move.white + move.draws + move.black;
-      const sanCell = document.createElement('td');
-      sanCell.textContent = move.san;
-
-      const percCell = document.createElement('td');
-      const perc = Math.round(moveTotal * 100 / total);
-      percCell.textContent = `${perc}%`;
-
-      const moveTotalCell = document.createElement('td');
-      moveTotalCell.textContent = new Intl.NumberFormat().format(moveTotal);
-
-      moveRow.append(sanCell, percCell, moveTotalCell);
-      moveRow.append(renderPercentageBar(move.white, move.draws, move.black));
-
-      return moveRow;
+      return table;
     }
 
-    const table = document.createElement('table');
-    const tbody = document.createElement('tbody');
-    const total = res.white + res.draws + res.black;
-    const moveRows = res.moves.map(move => renderMoveRow(move, total));
-    table.append(tbody);
-    tbody.append(...moveRows);
+    function renderNoGameFound() {
+      const p = document.createElement('p');
+      p.textContent = 'No game found';
 
-    if (res.moves.length > 1) {
-      const totalRow = renderMoveRow({
-        averageRating: 0,
-        white: res.white,
-        draws: res.draws,
-        black: res.black,
-        game: null,
-        opening: null,
-        san: 'Σ',
-        uci: 'Σ',
-      }, total, true);
-
-      tbody.append(totalRow);
+      return p;
     }
 
-    return table;
+    function renderMaxDepthReached() {
+      const p = document.createElement('p');
+      p.textContent = 'Max depth reached!';
+
+      return p;
+    }
+
+    const content = document.createElement('div');
+    content.id = contentId;
+
+    if (liRes) {
+      const noGameFound = liRes.white === 0 && liRes.black === 0 && liRes.draws === 0;
+      content.append(noGameFound ? renderNoGameFound() : renderTable(liRes));
+    }
+
+    else if (liRes === null) {
+      const maxDepthReached = renderMaxDepthReached();
+      content.append(maxDepthReached);
+    }
+
+    return content;
   }
 
-  function renderNoGameFound() {
-    const p = document.createElement('p');
-    p.textContent = 'No game found';
+  liRes = response;
 
-    return p;
+  const prevView = document.querySelector(`#${contentId}, #${optionsId}`);
+  const content = renderContent();
+
+  if (!prevView) {
+    // first render
+    if (content) {
+      const openingExplorer = document.getElementById(openingExplorerId)!;
+      openingExplorer.append(content);
+    }
   }
+  else {
+    /* Explicitly remove all arrows on content re-render,
+    since moveRow's mouseleave won't fire if moveRow is removed from DOM. */
+    document.dispatchEvent(new CustomEvent('removeAllArrows'));
 
-  function renderMaxDepthReached() {
-    const p = document.createElement('p');
-    p.textContent = 'Max depth reached!';
-
-    return p;
+    if (content) {
+      prevView.insertAdjacentElement('beforebegin', content);
+      prevView.remove();
+    }
   }
-
-  const content = document.createElement('div');
-  content.id = contentId;
-
-  if (liRes) {
-    const noGameFound = liRes.white === 0 && liRes.black === 0 && liRes.draws === 0;
-    content.append(noGameFound ? renderNoGameFound() : renderTable(liRes));
-  }
-
-  else if (liRes === null) {
-    const maxDepthReached = renderMaxDepthReached();
-    content.append(maxDepthReached);
-  }
-
-  return content;
 }
 
 async function renderOptions() {
@@ -664,40 +685,12 @@ export async function renderOpeningExplorer() {
     document.ccTweaks_responseFenListenerAdded = true;
   }
 
-  if (!document.ccTweaks_liResChangeListenerAdded) {
-    document.addEventListener('liResChange', async () => {
-      // render/re-render content whenever liRes updates
-      const prevView = document.querySelector(`#${contentId}, #${optionsId}`);
-      const content = renderContent();
-
-      if (!prevView) {
-        // first render
-        if (content) {
-          const openingExplorer = document.getElementById(openingExplorerId)!;
-          openingExplorer.append(content);
-        }
-      }
-      else {
-        if (content) {
-          prevView.insertAdjacentElement('beforebegin', content);
-          prevView.remove();
-        }
-      }
-    });
-
-    document.ccTweaks_liResChangeListenerAdded = true;
-  }
-
   const prevOpeningExplorer = document.getElementById(openingExplorerId);
 
   if (prevOpeningExplorer) {
-    /* Remove all arrows on re-render,
-    since moveRow's mouseleave won't fire if moveRow is removed from DOM. */
-    document.dispatchEvent(new CustomEvent('removeAllArrows'));
-
     // Re-render each child separately, not the whole div to avoid flashing
     if (!isOptionsOpen()) {
-      await updateFenAndLiRes();
+      await updateFen();
     }
     else {
       const currOptions = await renderOptions();
@@ -745,7 +738,7 @@ export async function renderOpeningExplorer() {
   openingExplorer.append(loadingContainer);
 
   openingExplorer.append(await renderHeader());
-  await updateFenAndLiRes();
+  await updateFen();
   loadingContainer.remove();
 }
 
