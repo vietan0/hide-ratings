@@ -3,6 +3,7 @@ import capitalize from './capitalize';
 import renderSvg from './renderSvg';
 import { type ExtStorage, type Rating, type TimeControl, ratings, timeControls } from './storageTypes';
 import getFenFromUrl from './getFenFromUrl';
+import maxDepthReached from './maxDepthReached';
 
 type Opening = {
   eco: string;
@@ -37,7 +38,7 @@ const headerId = 'header';
 const overlayClass = 'overlay';
 const cache = new Map<string, LiRes>();
 let fen = '';
-let liRes: LiRes | undefined;
+let liRes: LiRes | undefined | null; // undefined when fetch() fails, null when maxDepthReached
 const wait = 400;
 
 function addOverlay() {
@@ -193,9 +194,16 @@ async function fetchOrCache() {
   }
 }
 
-async function updateLiRes() {
+async function updateFenAndLiRes() {
   document.dispatchEvent(new CustomEvent('requestFen'));
-  await fetchOrCache();
+
+  if (maxDepthReached(fen)) {
+    liRes = null;
+    document.dispatchEvent(new CustomEvent('liResChange'));
+  }
+  else {
+    await fetchOrCache();
+  }
 }
 
 function renderContent() {
@@ -317,27 +325,32 @@ function renderContent() {
 
   function renderNoGameFound() {
     const p = document.createElement('p');
-
-    p.style = /* style */`
-      font-size: 1.3rem;
-      text-align: center; 
-      font-style: italic; 
-      padding-block: 1rem;
-    `;
-
     p.textContent = 'No game found';
 
     return p;
   }
 
+  function renderMaxDepthReached() {
+    const p = document.createElement('p');
+    p.textContent = 'Max depth reached!';
+
+    return p;
+  }
+
+  const content = document.createElement('div');
+  content.id = contentId;
+
   if (liRes) {
-    const content = document.createElement('div');
-    content.id = contentId;
     const noGameFound = liRes.white === 0 && liRes.black === 0 && liRes.draws === 0;
     content.append(noGameFound ? renderNoGameFound() : renderTable(liRes));
-
-    return content;
   }
+
+  else if (liRes === null) {
+    const maxDepthReached = renderMaxDepthReached();
+    content.append(maxDepthReached);
+  }
+
+  return content;
 }
 
 async function renderOptions() {
@@ -684,7 +697,7 @@ export async function renderOpeningExplorer() {
 
     // Re-render each child separately, not the whole div to avoid flashing
     if (!isOptionsOpen()) {
-      await updateLiRes();
+      await updateFenAndLiRes();
     }
     else {
       const currOptions = await renderOptions();
@@ -732,7 +745,7 @@ export async function renderOpeningExplorer() {
   openingExplorer.append(loadingContainer);
 
   openingExplorer.append(await renderHeader());
-  await updateLiRes();
+  await updateFenAndLiRes();
   loadingContainer.remove();
 }
 

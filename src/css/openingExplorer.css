@@ -145,6 +145,14 @@
   overflow-y: scroll;
 }
 
+/* messages: No game found/Max depth reached! */
+#content > p {
+  font-size: 1.3rem;
+  text-align: center;
+  font-style: italic;
+  padding-block: 1rem;
+}
+
 .dark-mode #content {
   background-color: var(--color-bg-subtlest);
 }
