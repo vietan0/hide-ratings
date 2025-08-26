@@ -1,5 +1,5 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "Chess.com Tweaks",
   "version": "1.7.3",
   "homepage_url": "https://github.com/vietan0/hide-ratings",
@@ -9,16 +9,19 @@
   },
   "permissions": [
     "scripting",
-    "storage",
+    "storage"
+  ],
+  "host_permissions": [
     "https://www.chess.com/*",
-    "https://explorer.lichess.ovh/*"
+    "https://explorer.lichess.ovh/*",
+    "https://lichess.org/paste"
   ],
   "background": {
     "scripts": [
       "dist/background.js"
     ]
   },
-  "browser_action": {
+  "action": {
     "default_icon": "src/icons/chesslogo.png",
     "default_title": "Chess.com Tweaks",
     "default_popup": "src/popup/index.html"
@@ -33,6 +36,12 @@
       "matches": ["https://lichess.org/paste"],
       "js": ["dist/lichessContent.js"],
       "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/icons/*", "src/images/*", "dist/mainWorldScript.js"],
+      "matches": ["https://www.chess.com/*"]
     }
   ],
   "browser_specific_settings": {

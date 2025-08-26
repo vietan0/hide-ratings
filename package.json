@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "dotenv": "^16.4.5",
-    "lodash-es": "^4.17.21"
+    "es-toolkit": "^1.39.10"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.22.0",

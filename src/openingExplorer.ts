@@ -1,4 +1,4 @@
-import debounce from 'lodash-es/debounce';
+import { debounce } from 'es-toolkit';
 import capitalize from './capitalize';
 import renderSvg from './renderSvg';
 import { type ExtStorage, type Rating, type TimeControl, ratings, timeControls } from './storageTypes';
@@ -154,7 +154,7 @@ function timeDebounced<T extends (...args: any) => any>(debouncedFn: T) {
   };
 }
 
-const timeDebouncedFetchLichess = timeDebounced(debounce(fetchLichess, wait, { leading: true, trailing: true }));
+const timeDebouncedFetchLichess = timeDebounced(debounce(fetchLichess, wait, { edges: ['leading', 'trailing'] }));
 
 async function fetchOrCache() {
   async function constructURL() {
