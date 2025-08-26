@@ -60,7 +60,7 @@ browser.runtime.onConnect.addListener((p) => {
   port = p;
 
   port.onMessage.addListener(async (message) => {
-    const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+    const tabs = await browser.tabs.query({ url: 'https://www.chess.com/*' });
     const msgTyped = message as { command: string; pgn?: string };
 
     switch (msgTyped.command) {
@@ -121,7 +121,7 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   if (isFeatureId(changedKey)) {
     if (!['hideOpponent', 'analyzeOnLichess', 'analysisLinkInArchive'].includes(changedKey)) {
     // changes to hideOpponent, analyzeOnLichess and analysisLinkInArchive are handled by content script
-      const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+      const tabs = await browser.tabs.query({ url: 'https://www.chess.com/*' });
 
       Promise.all(tabs.map(({ id }) =>
         newValue

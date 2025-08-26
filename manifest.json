@@ -25,12 +25,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["*://www.chess.com/*"],
+      "matches": ["https://www.chess.com/*"],
       "js": ["dist/content.js"],
       "run_at": "document_end"
     },
     {
-      "matches": ["*://lichess.org/paste"],
+      "matches": ["https://lichess.org/paste"],
       "js": ["dist/lichessContent.js"],
       "run_at": "document_end"
     }
