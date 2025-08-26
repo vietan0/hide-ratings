@@ -1,6 +1,6 @@
 # Chess.com Tweaks - Hide ratings, hide opponent and more!
 
-[![Firefox Addons Link](https://img.shields.io/badge/Firefox-1.7.1-blue?style=flat&logo=firefoxbrowser&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
+[![Firefox Addons Link](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Faddons.mozilla.org%2Fapi%2Fv5%2Faddons%2Faddon%2Fchesscom-tweaks%2F&query=%24.current_version.version&logo=firefoxbrowser&logoColor=white&label=Firefox)](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
 
 Chess.com Tweaks is a Firefox extension that enhances your Chess.com experience by decluttering the interface and providing additional analysis tools.
 
