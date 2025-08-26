@@ -40,6 +40,7 @@ const cache = new Map<string, LiRes>();
 let fen = '';
 let liRes: LiRes | undefined | null; // undefined when fetch() fails, null when maxDepthReached
 const wait = 400;
+let timeoutId: number | undefined;
 
 function addOverlay() {
   const overlay = document.createElement('div');
@@ -113,8 +114,6 @@ async function renderHeader() {
   return header;
 }
 
-let timeoutId: number | undefined;
-
 async function fetchLichess(url: string) {
   const response = await fetch(url)
     .then(r => r.json())
@@ -140,7 +139,7 @@ async function fetchLichess(url: string) {
 /**
  * Return a version of `debouncedFn` that will
  * - Add overlay (if there isn't one) on every invocation.
- * - Remove overlay when the timer runs out.
+ * - Give access to the timer of the debounced function.
  */
 function timeDebounced<T extends (...args: any) => any>(debouncedFn: T) {
   return async function (this: any, ...args: Parameters<T>) {
@@ -149,7 +148,6 @@ function timeDebounced<T extends (...args: any) => any>(debouncedFn: T) {
 
     timeoutId = setTimeout(() => {
       timeoutId = undefined;
-      removeOverlay();
     }, wait);
 
     await debouncedFn.call(this, ...args);
@@ -351,27 +349,23 @@ function updateLiResAndInsertContent(response: typeof liRes) {
   }
 
   liRes = response;
-
   const prevView = document.querySelector(`#${contentId}, #${optionsId}`);
   const content = renderContent();
 
   if (!prevView) {
     // first render
-    if (content) {
-      const openingExplorer = document.getElementById(openingExplorerId)!;
-      openingExplorer.append(content);
-    }
+    const openingExplorer = document.getElementById(openingExplorerId)!;
+    openingExplorer.append(content);
   }
   else {
     /* Explicitly remove all arrows on content re-render,
     since moveRow's mouseleave won't fire if moveRow is removed from DOM. */
     document.dispatchEvent(new CustomEvent('removeAllArrows'));
-
-    if (content) {
-      prevView.insertAdjacentElement('beforebegin', content);
-      prevView.remove();
-    }
+    prevView.insertAdjacentElement('beforebegin', content);
+    prevView.remove();
   }
+
+  removeOverlay();
 }
 
 async function renderOptions() {
