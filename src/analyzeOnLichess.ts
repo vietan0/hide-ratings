@@ -88,7 +88,6 @@ export function createAnalyzeOnLichessBtn(port: browser.runtime.Port, variant: '
             --bgColor: #383634;
             --bgColorHover: #474542;
             --borderBottomLine: #2b2a28;
-            --borderBottomLineHover: #2e2d2b;
             --buttonBoxShadowHover: rgba(40, 40, 40, 0.2) 0px 0px 8px 0px, rgba(40, 40, 40, 0.2) 0px 0px 16px 0px, rgba(40, 40, 40, 0.5) 0px -8px 24px 0px inset, rgb(40, 40, 40) 0px -4px 0px 0px inset;
           `;
 
@@ -108,8 +107,9 @@ export function createAnalyzeOnLichessBtn(port: browser.runtime.Port, variant: '
             width: 100%;
             --bgColor: #383634;
             --bgColorHover: #474542;
+            --borderBottomLine: #2b2a28;
             --buttonBoxShadowHover: rgba(40, 40, 40, 0.2) 0px 0px 8px 0px, rgba(40, 40, 40, 0.2) 0px 0px 16px 0px, rgba(40, 40, 40, 0.5) 0px -8px 24px 0px inset, rgb(40, 40, 40) 0px -4px 0px 0px inset;
-          `;
+            `;
 
       span.className = 'quick-analysis-loader-label';
       btn.append(span);
