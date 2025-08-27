@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "version": "1.7.1",
+  "version": "1.7.3",
   "scripts": {
     "build": "web-ext build",
     "dev": "web-ext run --devtools --start-url www.chess.com",
