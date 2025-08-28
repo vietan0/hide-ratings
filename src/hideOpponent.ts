@@ -1,3 +1,4 @@
+import browser from 'webextension-polyfill';
 import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
 import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
 import isGameOver from './isGameOver';
@@ -42,13 +43,13 @@ export function hideOpponentInEffect() {
   return Boolean(placeholderImg || placeholderUsernameDiv);
 }
 
-export function startHideOpponent(port: browser.runtime.Port) {
+export function startHideOpponent(port: browser.Runtime.Port) {
   port.postMessage({ command: 'hideOpponent' });
   overrideImg();
   overrideUsername();
 }
 
-export function stopHideOpponent(port: browser.runtime.Port) {
+export function stopHideOpponent(port: browser.Runtime.Port) {
   port.postMessage({ command: 'unhideOpponent' });
   restoreImg();
   restoreUsername();
@@ -59,7 +60,7 @@ export function stopHideOpponent(port: browser.runtime.Port) {
  * 1. When port first connects
  * 2. In mutation observer
  */
-export async function hideOrUnhide(port: browser.runtime.Port) {
+export async function hideOrUnhide(port: browser.Runtime.Port) {
   if (hideOpponentInEffect() && isGameOver()) {
     stopHideOpponent(port);
   }

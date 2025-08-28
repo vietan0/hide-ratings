@@ -1,15 +1,18 @@
+import { defineConfig } from 'rollup';
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
+import commonjs from '@rollup/plugin-commonjs';
 
-export default [
+export default defineConfig([
+
   {
     input: 'src/content.ts',
     output: {
       file: 'dist/content.js',
       sourcemap: true,
     },
-    plugins: [typescript(), nodeResolve(), terser()],
+    plugins: [typescript(), nodeResolve(), commonjs(), terser()],
   },
   {
     input: 'src/lichessContent.ts',
@@ -17,7 +20,7 @@ export default [
       file: 'dist/lichessContent.js',
       sourcemap: true,
     },
-    plugins: [typescript(), terser()],
+    plugins: [typescript(), nodeResolve(), commonjs(), terser()],
   },
   {
     input: 'src/mainWorldScript.ts',
@@ -33,7 +36,7 @@ export default [
       file: 'dist/background.js',
       sourcemap: true,
     },
-    plugins: [typescript(), terser()],
+    plugins: [typescript(), nodeResolve(), commonjs(), terser()],
   },
   {
     input: 'src/popup/index.ts',
@@ -41,6 +44,6 @@ export default [
       file: 'dist/popup.js',
       sourcemap: true,
     },
-    plugins: [typescript(), terser()],
+    plugins: [typescript(), nodeResolve(), commonjs(), terser()],
   },
-];
+]);

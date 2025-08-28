@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill';
+
 function getTopPlayerColor() {
   const clock = document.querySelector('.player-component.player-top > .clock-component');
   if (clock && clock.classList.contains('clock-white'))

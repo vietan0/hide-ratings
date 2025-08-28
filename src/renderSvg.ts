@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill';
+
 export default async function renderSvg(url: string) {
   const svgRes = await fetch(browser.runtime.getURL(url));
   const svgText = await svgRes.text();

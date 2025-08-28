@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill';
+
 function connectToBackground() {
   const port = browser.runtime.connect({ name: 'my-lichess-content-script-port' });
   port.postMessage({ command: 'requestPgn' });

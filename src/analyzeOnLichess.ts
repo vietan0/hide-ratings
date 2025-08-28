@@ -1,9 +1,11 @@
+import browser from 'webextension-polyfill';
+
 export const analyzeOnLichessClass = 'analyzeOnLichess';
 
 /**
  * @returns A button that sends the game to Lichess analysis page
  */
-export function createAnalyzeOnLichessBtn(port: browser.runtime.Port, variant: 'default' | 'small' | 'icon' = 'default') {
+export function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default' | 'small' | 'icon' = 'default') {
   let btn: HTMLDivElement | HTMLButtonElement;
 
   function handleClick() {
@@ -122,7 +124,7 @@ export function createAnalyzeOnLichessBtn(port: browser.runtime.Port, variant: '
   return btn;
 }
 
-export function addBtnToPlaces(port: browser.runtime.Port) {
+export function addBtnToPlaces(port: browser.Runtime.Port) {
   const gameOverModalBtns = document.querySelector('.game-over-modal-buttons');
   const gameReviewBtnSidebar = document.querySelector('.sidebar-component .game-review-buttons-component');
   const focusModeSidebarBottom = document.querySelector('.focus-mode-sidebar-bottom');

@@ -1,3 +1,4 @@
+import browser from 'webextension-polyfill';
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
 import { isOptionsOpen, openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
@@ -5,7 +6,7 @@ import { type ExtStorage, isFeatureId } from './storageTypes';
 import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
 import { addAnalysisLinks, analysisLinkInArchiveRegex, removeAnalysisLinks } from './analysisLinkInArchive';
 
-let port: browser.runtime.Port;
+let port: browser.Runtime.Port;
 
 const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
   const topUserBlock = document.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
@@ -304,7 +305,7 @@ port = browser.runtime.connect({ name: 'my-content-script-port' });
 content();
 
 browser.storage.local.onChanged.addListener(async (changes) => {
-  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.Storage.StorageChange][];
   const [changedKey, { newValue }] = entries[0]!;
 
   if (isFeatureId(changedKey)) {

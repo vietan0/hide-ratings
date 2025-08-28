@@ -1,3 +1,4 @@
+import browser from 'webextension-polyfill';
 import features from '../features';
 import renderSvg from '../renderSvg';
 import { type ExtStorage, type FeatureId, type FeatureStorage, isFeatureId } from '../storageTypes';
@@ -65,7 +66,7 @@ async function renderFooterSvg() {
 renderFooterSvg();
 
 browser.storage.local.onChanged.addListener((changes) => {
-  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.Storage.StorageChange][];
   const [changedKey] = entries[0]!;
   if (isFeatureId(changedKey))
     updateSwitchIcon(changedKey);

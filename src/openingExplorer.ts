@@ -1,3 +1,4 @@
+import browser from 'webextension-polyfill';
 import { debounce } from 'es-toolkit';
 import capitalize from './capitalize';
 import renderSvg from './renderSvg';

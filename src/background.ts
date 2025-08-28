@@ -1,3 +1,4 @@
+import browser from 'webextension-polyfill';
 import { type ExtStorage, isFeatureId } from './storageTypes';
 
 const initialStorage: ExtStorage = {
@@ -53,7 +54,7 @@ function getCSSDetails(filename: string, tabId: number | undefined) {
   return { files: [`src/css/${filename}.css`], target: { tabId } };
 }
 
-let port: browser.runtime.Port;
+let port: browser.Runtime.Port;
 let pgn: string | undefined;
 
 browser.runtime.onConnect.addListener((p) => {
@@ -115,7 +116,7 @@ browser.runtime.onConnect.addListener((p) => {
 });
 
 browser.storage.local.onChanged.addListener(async (changes) => {
-  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.Storage.StorageChange][];
   const [changedKey, { newValue }] = entries[0]!;
 
   if (isFeatureId(changedKey)) {
