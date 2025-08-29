@@ -17,9 +17,8 @@
     "https://lichess.org/paste"
   ],
   "background": {
-    "scripts": [
-      "dist/background.js"
-    ]
+    "scripts": ["dist/background.js"],
+    "service_worker": "dist/background.js"
   },
   "action": {
     "default_icon": "src/icons/chesslogo.png",

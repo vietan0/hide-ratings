@@ -3,7 +3,8 @@
   "version": "1.7.3",
   "scripts": {
     "build": "web-ext build",
-    "dev": "web-ext run --devtools --start-url www.chess.com",
+    "dev": "web-ext run --devtools",
+    "dev-chrome": "web-ext run -t chromium --args='--auto-open-devtools-for-tabs'",
     "lint": "eslint .",
     "rb": "rollup -c rollup.config.ts --configPlugin typescript",
     "rw": "rollup -c rollup.config.ts --configPlugin typescript -w",
@@ -25,7 +26,7 @@
     "eslint-plugin-format": "^0.1.2",
     "rollup": "^4.45.0",
     "typescript": "^5.9.2",
-    "web-ext": "^8.2.0",
+    "web-ext": "^8.9.0",
     "webextension-polyfill": "^0.12.0"
   },
   "pnpm": {

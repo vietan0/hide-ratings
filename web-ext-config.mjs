@@ -5,7 +5,9 @@ dotenv.config();
 
 export default {
   run: {
+    startUrl: ['www.chess.com'],
     firefoxProfile: 'ext-dev',
+    chromiumProfile: process.env.CHROMIUM_PROFILE,
   },
   sign: {
     channel: 'listed',
