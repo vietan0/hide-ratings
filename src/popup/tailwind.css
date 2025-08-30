@@ -344,9 +344,9 @@
   .pb-\[41px\] {
     padding-bottom: 41px;
   }
-  .text-sm {
-    font-size: var(--text-sm);
-    line-height: var(--tw-leading, var(--text-sm--line-height));
+  .\!text-sm {
+    font-size: var(--text-sm) !important;
+    line-height: var(--tw-leading, var(--text-sm--line-height)) !important;
   }
   .text-xs {
     font-size: var(--text-xs);
