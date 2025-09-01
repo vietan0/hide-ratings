@@ -1,5 +1,5 @@
 import browser from 'webextension-polyfill';
-import { type ExtStorage, isFeatureId } from './storageTypes';
+import type { ExtStorage } from './storageTypes';
 
 const initialStorage: ExtStorage = {
   hideRatings: false,
@@ -142,16 +142,13 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   const entries = Object.entries(changes) as [keyof ExtStorage, browser.Storage.StorageChange][];
   const [changedKey, { newValue }] = entries[0]!;
 
-  if (isFeatureId(changedKey)) {
-    if (!['hideOpponent', 'analyzeOnLichess', 'analysisLinkInArchive'].includes(changedKey)) {
-    // changes to hideOpponent, analyzeOnLichess and analysisLinkInArchive are handled by content script
-      const tabs = await browser.tabs.query({ url: 'https://www.chess.com/*' });
+  if (['hideRatings', 'hideFlags', 'hideOwnFlagOnHome'].includes(changedKey)) {
+    const tabs = await browser.tabs.query({ url: 'https://www.chess.com/*' });
 
-      Promise.all(tabs.map(({ id }) =>
-        newValue
-          ? browser.scripting.insertCSS(getCSSDetails(changedKey, id))
-          : browser.scripting.removeCSS(getCSSDetails(changedKey, id)),
-      ));
-    }
+    Promise.all(tabs.map(({ id }) =>
+      newValue
+        ? browser.scripting.insertCSS(getCSSDetails(changedKey, id))
+        : browser.scripting.removeCSS(getCSSDetails(changedKey, id)),
+    ));
   }
 });

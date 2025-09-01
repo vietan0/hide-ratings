@@ -2,7 +2,7 @@ import browser from 'webextension-polyfill';
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
 import isGameOver from './isGameOver';
 import { isOptionsOpen, openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
-import { type ExtStorage, isFeatureId } from './storageTypes';
+import type { ExtStorage } from './storageTypes';
 import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
 import { addAnalysisLinks, analysisLinkInArchiveRegex, removeAnalysisLinks } from './analysisLinkInArchive';
 
@@ -315,71 +315,69 @@ browser.storage.local.onChanged.addListener(async (changes) => {
   const entries = Object.entries(changes) as [keyof ExtStorage, browser.Storage.StorageChange][];
   const [changedKey, { newValue }] = entries[0]!;
 
-  if (isFeatureId(changedKey)) {
-    if (changedKey === 'hideOpponent') {
-      if (newValue) {
-        if (window.location.href.match(hideOpponentRegex)) {
-          topPlayerCompObserver.observe(document.querySelector('.player-component.player-top')!, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            attributeFilter: ['class'],
-            attributeOldValue: true,
-          });
+  if (changedKey === 'hideOpponent') {
+    if (newValue) {
+      if (window.location.href.match(hideOpponentRegex)) {
+        topPlayerCompObserver.observe(document.querySelector('.player-component.player-top')!, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          attributeFilter: ['class'],
+          attributeOldValue: true,
+        });
 
-          if (checkHideOpponentConds().cond) {
-            startHideOpponent(port);
-          }
+        if (checkHideOpponentConds().cond) {
+          startHideOpponent(port);
         }
-      }
-      else {
-        stopHideOpponent(port);
-        topPlayerCompObserver.disconnect();
       }
     }
+    else {
+      stopHideOpponent(port);
+      topPlayerCompObserver.disconnect();
+    }
+  }
 
-    else if (changedKey === 'analyzeOnLichess') {
-      if (newValue) {
-        if (window.location.href.match(analyzeOnLichessRegex)) {
-          observeForAnalyzeOnLichess();
+  else if (changedKey === 'analyzeOnLichess') {
+    if (newValue) {
+      if (window.location.href.match(analyzeOnLichessRegex)) {
+        observeForAnalyzeOnLichess();
 
-          if (isGameOver()) {
-            addBtnToPlaces(port);
-          }
+        if (isGameOver()) {
+          addBtnToPlaces(port);
         }
-      }
-      else {
-        removeAllBtns();
-        layoutObserver.disconnect();
       }
     }
+    else {
+      removeAllBtns();
+      layoutObserver.disconnect();
+    }
+  }
 
-    else if (changedKey === 'openingExplorer') {
-      if (newValue) {
-        if (window.location.href.match(openingExplorerRegex)) {
-          startOpeningExplorer();
-          sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
-        }
-      }
-      else {
-        port.postMessage({ command: 'hideOpeningExplorer' });
-        document.getElementById(openingExplorerId)?.remove();
-        sidebarObserver.disconnect();
-        wcBoardObserver.disconnect();
+  else if (changedKey === 'openingExplorer') {
+    if (newValue) {
+      if (window.location.href.match(openingExplorerRegex)) {
+        startOpeningExplorer();
+        sidebarObserver.observe(document.getElementById('board-layout-sidebar')!, { childList: true, subtree: true });
       }
     }
+    else {
+      port.postMessage({ command: 'hideOpeningExplorer' });
+      document.getElementById(openingExplorerId)?.remove();
+      sidebarObserver.disconnect();
+      wcBoardObserver.disconnect();
+    }
+  }
 
-    else if (changedKey === 'analysisLinkInArchive') {
-      if (newValue) {
-        if (window.location.href.match(analysisLinkInArchiveRegex)) {
-          startAnalysisLinkInArchive();
-        }
+  else if (changedKey === 'analysisLinkInArchive') {
+    if (newValue) {
+      if (window.location.href.match(analysisLinkInArchiveRegex)) {
+        startAnalysisLinkInArchive();
       }
-      else {
-        port.postMessage({ command: 'hideAnalysisLinkInArchive' });
-        removeAnalysisLinks();
-        archiveObserver.disconnect();
-      }
+    }
+    else {
+      port.postMessage({ command: 'hideAnalysisLinkInArchive' });
+      removeAnalysisLinks();
+      archiveObserver.disconnect();
     }
   }
 });
