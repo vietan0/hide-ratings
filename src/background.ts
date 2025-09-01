@@ -136,6 +136,15 @@ browser.runtime.onConnect.addListener((p) => {
         throw new Error(`Unhandled message.command: ${msgTyped.command}`);
     }
   });
+
+  port.onDisconnect.addListener(() => {
+    if (browser.runtime.lastError) {
+      if (browser.runtime.lastError.message === 'The page keeping the extension port is moved into back/forward cache, so the message channel is closed.')
+        return; // can safely ignore
+
+      console.error(browser.runtime.lastError);
+    }
+  });
 });
 
 browser.storage.local.onChanged.addListener(async (changes) => {

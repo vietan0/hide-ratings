@@ -308,6 +308,25 @@ function connect() {
   });
 }
 
+window.addEventListener('pageshow', async (event) => {
+  if (event.persisted) {
+    // The page is restored from BFCache, set up a new connection.
+    connect();
+
+    const { analyzeOnLichess } = await browser.storage.local.get() as ExtStorage;
+
+    if (analyzeOnLichess) {
+      if (window.location.href.match(analyzeOnLichessRegex)) {
+        if (isGameOver()) {
+          // replace buttons, because port is stale -> onclick handlers wouldn't work
+          removeAllBtns();
+          addBtnToPlaces(port);
+        }
+      }
+    }
+  }
+});
+
 connect();
 content();
 
