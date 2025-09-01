@@ -43,14 +43,23 @@ export function hideOpponentInEffect() {
   return Boolean(placeholderImg || placeholderUsernameDiv);
 }
 
+let isCSSInserted = false;
+
 export function startHideOpponent(port: browser.Runtime.Port) {
-  port.postMessage({ command: 'hideOpponent' });
+  /* Unlike overrideImg and overrideUsername,
+  insertCSS can be duplicated (happens in Chrome). This flag check prevents that. */
+  if (!isCSSInserted) {
+    port.postMessage({ command: 'hideOpponent' });
+    isCSSInserted = true;
+  }
+
   overrideImg();
   overrideUsername();
 }
 
 export function stopHideOpponent(port: browser.Runtime.Port) {
   port.postMessage({ command: 'unhideOpponent' });
+  isCSSInserted = false;
   restoreImg();
   restoreUsername();
 }

@@ -11,6 +11,11 @@
   display: none;
 }
 
+/* grudge-score: hide from both sides */
+.player-component .grudge-score-component {
+  display: none;
+}
+
 /* focus mode */
 .player-component.player-top.player-theatre
   .user-tagline-compact-theatre
