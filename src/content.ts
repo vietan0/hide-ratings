@@ -300,8 +300,15 @@ async function content() {
   }
 }
 
-// connect when the content script loads
-port = browser.runtime.connect({ name: 'my-content-script-port' });
+function connect() {
+  port = browser.runtime.connect({ name: 'my-content-script-port' });
+
+  port.onDisconnect.addListener(() => {
+    connect();
+  });
+}
+
+connect();
 content();
 
 browser.storage.local.onChanged.addListener(async (changes) => {

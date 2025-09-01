@@ -25,6 +25,29 @@ const initialStorage: ExtStorage = {
 };
 
 browser.runtime.onInstalled.addListener(async (details) => {
+  let start = Date.now();
+  browser.alarms.create('keepAlive', { periodInMinutes: 0.5 });
+
+  browser.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'keepAlive') {
+      const end = Date.now();
+      const elapsed = ((end - start) / 1000).toFixed(1);
+      console.info('BG is alive again after', elapsed, 's'); // This log confirms the service worker is being kept alive
+      start = end;
+    }
+  });
+
+  const url = browser.runtime.getURL('');
+
+  if (url.startsWith('chrome')) {
+    const tabs = await browser.tabs.query({ url: 'https://www.chess.com/*' });
+
+    for (const tab of tabs) {
+      // refresh - in Chrome, content scripts aren't auto-injected on install/update
+      browser.tabs.reload(tab.id);
+    }
+  }
+
   if (details.reason === 'install') {
     await browser.storage.local.set(initialStorage);
   }
