@@ -34,7 +34,7 @@ function addLinkCells() {
     const anchor = document.createElement('a');
     anchor.href = `${originalHref}/analysis`;
 
-    const analyzeIcon = await renderSvg('src/icons/Analyze.svg');
+    const analyzeIcon = await renderSvg('../icons/Analyze.svg');
     anchor.append(analyzeIcon);
     analysisCell.append(anchor);
     cell.insertAdjacentElement('afterend', analysisCell);

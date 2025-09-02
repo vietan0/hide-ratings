@@ -18,7 +18,7 @@ export function overrideImg() {
     return;
   const placeholderImg = document.createElement('img');
   placeholderImg.id = placeholderImgId;
-  placeholderImg.src = browser.runtime.getURL(`src/images/${getTopPlayerColor()}.png`);
+  placeholderImg.src = browser.runtime.getURL(`../images/${getTopPlayerColor()}.png`);
   imgContainer.append(placeholderImg);
 }
 

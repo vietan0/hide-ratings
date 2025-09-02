@@ -2,22 +2,27 @@
   "type": "module",
   "version": "1.7.3",
   "scripts": {
-    "build": "web-ext build",
-    "dev": "web-ext run --devtools",
-    "dev-chrome": "web-ext run -t chromium --args='--auto-open-devtools-for-tabs'",
+    "build": "node --max-old-space-size=8192 node_modules/rollup/dist/bin/rollup -c rollup.config.ts --configPlugin typescript",
+    "build:firefox": "rm -rf dist/firefox && pnpm run build --environment BROWSER:firefox",
+    "build:chrome": "rm -rf dist/chrome && pnpm run build --environment BROWSER:chrome",
+    "dev:firefox": "cd dist/firefox && web-ext run --config=../../web-ext-config.mjs --devtools",
+    "dev:chrome": "cd dist/chrome && web-ext run --config=../../web-ext-config.mjs -t chromium --args='--auto-open-devtools-for-tabs'",
     "lint": "eslint .",
-    "rb": "rollup -c rollup.config.ts --configPlugin typescript",
-    "rw": "rollup -c rollup.config.ts --configPlugin typescript -w",
-    "sign": "web-ext sign",
-    "wlint": "web-ext lint"
+    "sign": "cd dist/firefox && web-ext sign --config=../../web-ext-config.mjs",
+    "watch:firefox": "pnpm run build:firefox -w",
+    "watch:chrome": "pnpm run build:chrome -w",
+    "wlint": "cd dist/firefox && web-ext lint",
+    "zip:firefox": "cd dist/firefox && web-ext build --config=../../web-ext-config.mjs"
   },
   "dependencies": {
+    "chrome-webstore-upload-cli": "^3.3.2",
     "dotenv": "^16.4.5",
     "es-toolkit": "^1.39.10"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^2.22.0",
     "@rollup/plugin-commonjs": "^28.0.6",
+    "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
@@ -25,6 +30,8 @@
     "eslint": "^9.6.0",
     "eslint-plugin-format": "^0.1.2",
     "rollup": "^4.45.0",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-delete": "^3.0.1",
     "typescript": "^5.9.2",
     "web-ext": "^8.9.0",
     "webextension-polyfill": "^0.12.0"

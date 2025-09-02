@@ -68,7 +68,7 @@ export function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: '
     });
 
     const icon = document.createElement('img');
-    icon.src = browser.runtime.getURL('src/icons/SimpleIconsLichess.svg');
+    icon.src = browser.runtime.getURL('../icons/SimpleIconsLichess.svg');
     icon.style = 'width: 20px';
     btn.append(icon);
   }
@@ -95,7 +95,7 @@ export function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: '
 
       span.className = 'cc-button-one-line';
       const icon = document.createElement('img');
-      icon.src = browser.runtime.getURL('src/icons/SimpleIconsLichess.svg');
+      icon.src = browser.runtime.getURL('../icons/SimpleIconsLichess.svg');
       icon.style = 'width: 24px';
       anchor.append(icon);
       anchor.append(span);

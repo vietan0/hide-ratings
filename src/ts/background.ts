@@ -74,7 +74,7 @@ function getCSSDetails(filename: string, tabId: number | undefined) {
   if (tabId === undefined)
     throw new Error(`tabId is undefined`);
 
-  return { files: [`src/css/${filename}.css`], target: { tabId } };
+  return { files: [`css/${filename}.css`], target: { tabId } };
 }
 
 let port: browser.Runtime.Port;

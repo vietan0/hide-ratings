@@ -1,9 +1,11 @@
 import process from 'node:process';
 import dotenv from 'dotenv';
 
-dotenv.config();
+// since this file is executed relative to manifest.json in dist/{browser}
+dotenv.config({ path: '../../.env' });
 
 export default {
+  artifactsDir: '../../web-ext-artifacts',
   run: {
     startUrl: ['www.chess.com'],
     firefoxProfile: 'ext-dev',
@@ -14,13 +16,5 @@ export default {
     apiKey: process.env.WEB_EXT_API_KEY,
     apiSecret: process.env.WEB_EXT_API_SECRET,
   },
-  ignoreFiles: [
-    'src/**/*.{js,ts}',
-    '**/*.js.map',
-    '**/*.md',
-    '**/*config.{?(m|c)js,ts}',
-    '**/!(manifest).json',
-    'screenshots',
-    'pnpm-lock.yaml',
-  ],
+  ignoreFiles: ['**/*.js.map'],
 };

@@ -5,7 +5,7 @@
   "homepage_url": "https://github.com/vietan0/hide-ratings",
   "description": "Chess.com Tweaks is a Firefox extension that enhances your Chess.com experience by decluttering the interface and providing additional analysis tools.",
   "icons": {
-    "128": "src/icons/chesslogo.png"
+    "128": "icons/chesslogo.png"
   },
   "permissions": [
     "alarms",
@@ -18,29 +18,29 @@
     "https://lichess.org/paste"
   ],
   "background": {
-    "scripts": ["dist/background.js"],
-    "service_worker": "dist/background.js"
+    "scripts": ["js/background.js"],
+    "service_worker": "js/background.js"
   },
   "action": {
-    "default_icon": "src/icons/chesslogo.png",
+    "default_icon": "icons/chesslogo.png",
     "default_title": "Chess.com Tweaks",
-    "default_popup": "src/popup/index.html"
+    "default_popup": "popup/popup.html"
   },
   "content_scripts": [
     {
       "matches": ["https://www.chess.com/*"],
-      "js": ["dist/content.js"],
+      "js": ["js/content.js"],
       "run_at": "document_end"
     },
     {
       "matches": ["https://lichess.org/paste"],
-      "js": ["dist/lichessContent.js"],
+      "js": ["js/lichessContent.js"],
       "run_at": "document_end"
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["src/icons/*", "src/images/*", "dist/mainWorldScript.js"],
+      "resources": ["icons/*", "images/*", "js/mainWorldScript.js"],
       "matches": ["https://www.chess.com/*"]
     }
   ],

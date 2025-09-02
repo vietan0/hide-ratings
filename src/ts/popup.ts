@@ -1,11 +1,11 @@
 import browser from 'webextension-polyfill';
-import features from '../features';
-import renderSvg from '../renderSvg';
-import { type ExtStorage, type FeatureId, type FeatureStorage, isFeatureId } from '../storageTypes';
+import features from './features';
+import renderSvg from './renderSvg';
+import { type ExtStorage, type FeatureId, type FeatureStorage, isFeatureId } from './storageTypes';
 
 async function renderSwitch(featureId: FeatureId, btn: HTMLButtonElement) {
   const storage = await browser.storage.local.get(featureId) as Pick<FeatureStorage, typeof featureId>;
-  const switchIcon = await renderSvg(`src/icons/${storage[featureId] ? 'MdiToggleSwitch' : 'MdiToggleSwitchOff'}.svg`);
+  const switchIcon = await renderSvg(`../icons/${storage[featureId] ? 'MdiToggleSwitch' : 'MdiToggleSwitchOff'}.svg`);
   switchIcon.classList.add('max-w-8', storage[featureId] ? 'text-[#81b64c]' : 'text-zinc-500');
   switchIcon.id = `switch-${featureId}`;
   btn.append(switchIcon);
@@ -58,7 +58,7 @@ renderBtns();
 async function renderFooterSvg() {
   const footer = document.getElementsByTagName('footer').item(0)!;
   const footerLink = footer.getElementsByTagName('a').item(0)!;
-  const svg = await renderSvg('src/icons/MdiLaunch.svg');
+  const svg = await renderSvg('../icons/MdiLaunch.svg');
   svg.classList.add('w-3', 'h-auto', 'inline-block', 'object-contain');
   footerLink.append(svg);
 }

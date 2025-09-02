@@ -37,6 +37,7 @@ export const contentId = 'content';
 const optionsId = 'options';
 const headerId = 'header';
 const overlayClass = 'overlay';
+const loadingId = 'loading';
 const cache = new Map<string, LiRes>();
 let fen = '';
 let liRes: LiRes | undefined | null; // undefined when fetch() fails, null when maxDepthReached
@@ -96,7 +97,7 @@ async function renderHeader() {
   async function renderOptionsBtn() {
     const optionsBtn = document.createElement('button');
     optionsBtn.id = 'optionsBtn';
-    const cogIcon = await renderSvg('src/icons/MdiCog.svg');
+    const cogIcon = await renderSvg('../icons/MdiCog.svg');
     optionsBtn.append(cogIcon);
 
     optionsBtn.onclick = async () => {
@@ -193,11 +194,19 @@ async function fetchOrCache() {
 async function updateFen() {
   document.dispatchEvent(new CustomEvent('requestFen'));
 
-  if (maxDepthReached(fen)) {
-    updateLiResAndInsertContent(null);
+  if (fen === '') {
+    setTimeout(updateFen, 100);
   }
   else {
-    await fetchOrCache();
+    if (maxDepthReached(fen)) {
+      updateLiResAndInsertContent(null);
+    }
+    else {
+      await fetchOrCache();
+    }
+
+    // remove first-render loading icon after render is successful
+    document.getElementById(loadingId)?.remove();
   }
 }
 
@@ -436,7 +445,7 @@ async function renderOptions() {
     btn.ariaLabel = timeControl;
     btn.title = capitalize(timeControl);
 
-    const timeControlIcon = await renderSvg(`src/icons/timeControl/${timeControl}.svg`);
+    const timeControlIcon = await renderSvg(`../icons/timeControl/${timeControl}.svg`);
     btn.append(timeControlIcon);
 
     btn.onclick = () => {
@@ -712,11 +721,11 @@ export async function renderOpeningExplorer() {
     - So create a script in world: 'MAIN' to interact with
     - Here it's only injected on first render, not re-renders or file save
    */
-  const mainWorldScriptInjected = document.body.querySelector('script[src$="dist/mainWorldScript.js"]');
+  const mainWorldScriptInjected = document.body.querySelector('script[src$="mainWorldScript.js"]');
 
   if (!mainWorldScriptInjected) {
     const mainWorldScript = document.createElement('script');
-    mainWorldScript.src = browser.runtime.getURL('dist/mainWorldScript.js');
+    mainWorldScript.src = browser.runtime.getURL('js/mainWorldScript.js');
     document.body.append(mainWorldScript);
   }
 
@@ -727,14 +736,13 @@ export async function renderOpeningExplorer() {
   parent.prepend(openingExplorer);
 
   const loadingContainer = document.createElement('div');
-  loadingContainer.id = 'loading';
-  const loadingIcon = await renderSvg('src/icons/MdiLoading.svg');
+  loadingContainer.id = loadingId;
+  const loadingIcon = await renderSvg('../icons/MdiLoading.svg');
   loadingContainer.append(loadingIcon);
   openingExplorer.append(loadingContainer);
 
   openingExplorer.append(await renderHeader());
   await updateFen();
-  loadingContainer.remove();
 }
 
 export const openingExplorerRegex = /chess.com\/analysis/;

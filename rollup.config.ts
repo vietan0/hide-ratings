@@ -1,49 +1,74 @@
+import process from 'node:process';
 import { defineConfig } from 'rollup';
 import typescript from '@rollup/plugin-typescript';
 import terser from '@rollup/plugin-terser';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import copy from 'rollup-plugin-copy';
+import del from 'rollup-plugin-delete';
+import json from '@rollup/plugin-json';
+
+if (!process.env.BROWSER) {
+  throw new Error('BROWSER is missing, must specify using --environment flag.');
+}
+
+const outDir = `dist/${process.env.BROWSER}`;
 
 export default defineConfig([
+  {
+    input: 'baseManifest.json',
+    output: { dir: 'dist' },
+    plugins: [
+      json(),
+      copy({
+        targets: [
+          {
+            src: 'baseManifest.json',
+            dest: outDir,
+            rename: 'manifest.json',
+            transform: (contents) => {
+              const manifest = JSON.parse(contents.toString());
 
+              if (process.env.BROWSER === 'firefox') {
+                delete manifest.background.service_worker;
+              }
+              else if (process.env.BROWSER === 'chrome') {
+                delete manifest.background.scripts;
+                delete manifest.browser_specific_settings;
+              }
+
+              return JSON.stringify(manifest, null, 2);
+            },
+          },
+          { src: ['src/css', 'src/icons', 'src/images', 'src/popup'], dest: outDir },
+        ],
+      }),
+      del({ targets: 'dist/baseManifest.js', hook: 'writeBundle' }),
+    ],
+  },
   {
-    input: 'src/content.ts',
-    output: {
-      file: 'dist/content.js',
-      sourcemap: true,
-    },
+    input: 'src/ts/content.ts',
+    output: { dir: `${outDir}/js`, sourcemap: true },
     plugins: [typescript(), nodeResolve(), commonjs(), terser()],
   },
   {
-    input: 'src/lichessContent.ts',
-    output: {
-      file: 'dist/lichessContent.js',
-      sourcemap: true,
-    },
+    input: 'src/ts/background.ts',
+    output: { dir: `${outDir}/js`, sourcemap: true },
     plugins: [typescript(), nodeResolve(), commonjs(), terser()],
   },
   {
-    input: 'src/mainWorldScript.ts',
-    output: {
-      file: 'dist/mainWorldScript.js',
-      sourcemap: true,
-    },
+    input: 'src/ts/popup.ts',
+    output: { dir: `${outDir}/js`, sourcemap: true },
+    plugins: [typescript(), nodeResolve(), commonjs(), terser()],
+  },
+  {
+    input: 'src/ts/lichessContent.ts',
+    output: { dir: `${outDir}/js`, sourcemap: true },
+    plugins: [typescript(), nodeResolve(), commonjs(), terser()],
+  },
+  {
+    input: 'src/ts/mainWorldScript.ts',
+    output: { dir: `${outDir}/js`, sourcemap: true },
     plugins: [typescript(), terser()],
-  },
-  {
-    input: 'src/background.ts',
-    output: {
-      file: 'dist/background.js',
-      sourcemap: true,
-    },
-    plugins: [typescript(), nodeResolve(), commonjs(), terser()],
-  },
-  {
-    input: 'src/popup/index.ts',
-    output: {
-      file: 'dist/popup.js',
-      sourcemap: true,
-    },
-    plugins: [typescript(), nodeResolve(), commonjs(), terser()],
   },
 ]);
