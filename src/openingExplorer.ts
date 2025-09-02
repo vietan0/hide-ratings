@@ -41,7 +41,7 @@ const cache = new Map<string, LiRes>();
 let fen = '';
 let liRes: LiRes | undefined | null; // undefined when fetch() fails, null when maxDepthReached
 const wait = 400;
-let timeoutId: number | undefined;
+let timeoutId: NodeJS.Timeout | undefined;
 
 function addOverlay() {
   const overlay = document.createElement('div');
