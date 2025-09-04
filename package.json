@@ -12,9 +12,11 @@
     "watch:firefox": "pnpm run build:firefox -w",
     "watch:chrome": "pnpm run build:chrome -w",
     "wlint": "cd dist/firefox && web-ext lint",
-    "zip:firefox": "cd dist/firefox && web-ext build --config=../../web-ext-config.mjs"
+    "zip:firefox": "cd dist/firefox && web-ext build --config=../../web-ext-config.mjs",
+    "zip:chrome": "node zip-chrome.js"
   },
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "chrome-webstore-upload-cli": "^3.3.2",
     "dotenv": "^16.4.5",
     "es-toolkit": "^1.39.10"

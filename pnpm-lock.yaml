@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      adm-zip:
+        specifier: ^0.5.16
+        version: 0.5.16
       chrome-webstore-upload-cli:
         specifier: ^3.3.2
         version: 3.3.2
