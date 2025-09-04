@@ -1,5 +1,5 @@
-import browser from 'webextension-polyfill';
 import type { ExtStorage } from './storageTypes';
+import browser from 'webextension-polyfill';
 
 const initialStorage: ExtStorage = {
   hideRatings: false,

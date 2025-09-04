@@ -1,8 +1,8 @@
+import type { ExtStorage } from './storageTypes';
 import browser from 'webextension-polyfill';
 import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
 import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
 import isGameOver from './isGameOver';
-import type { ExtStorage } from './storageTypes';
 
 // details: https://regexr.com/8gcck
 export const hideOpponentRegex = /chess.com\/(?:game\/(?:live\/|daily\/)?\d+|play\/online\/new)/;

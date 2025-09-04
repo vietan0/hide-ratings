@@ -1,10 +1,10 @@
+import type { ExtStorage } from './storageTypes';
 import browser from 'webextension-polyfill';
+import { addAnalysisLinks, analysisLinkInArchiveRegex, removeAnalysisLinks } from './analysisLinkInArchive';
 import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeOnLichess';
+import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
 import isGameOver from './isGameOver';
 import { isOptionsOpen, openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
-import type { ExtStorage } from './storageTypes';
-import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
-import { addAnalysisLinks, analysisLinkInArchiveRegex, removeAnalysisLinks } from './analysisLinkInArchive';
 
 let port: browser.Runtime.Port;
 

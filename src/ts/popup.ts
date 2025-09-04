@@ -1,7 +1,8 @@
+import type { ExtStorage, FeatureId, FeatureStorage } from './storageTypes';
 import browser from 'webextension-polyfill';
 import features from './features';
 import renderSvg from './renderSvg';
-import { type ExtStorage, type FeatureId, type FeatureStorage, isFeatureId } from './storageTypes';
+import { isFeatureId } from './storageTypes';
 
 async function renderSwitch(featureId: FeatureId, btn: HTMLButtonElement) {
   const storage = await browser.storage.local.get(featureId) as Pick<FeatureStorage, typeof featureId>;

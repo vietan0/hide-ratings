@@ -22,15 +22,15 @@
     "es-toolkit": "^1.39.10"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^2.22.0",
+    "@antfu/eslint-config": "^5.2.2",
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^12.1.4",
     "@types/webextension-polyfill": "^0.12.3",
-    "eslint": "^9.6.0",
-    "eslint-plugin-format": "^0.1.2",
+    "eslint": "^9.34.0",
+    "eslint-plugin-format": "^1.0.1",
     "rollup": "^4.45.0",
     "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-delete": "^3.0.1",

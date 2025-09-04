@@ -1,4 +1,5 @@
-import { type WCChessBoard, ccTweaksTag } from './wcChessBoardTypes';
+import type { WCChessBoard } from './wcChessBoardTypes';
+import { ccTweaksTag } from './wcChessBoardTypes';
 
 const color = '#a09bfa';
 

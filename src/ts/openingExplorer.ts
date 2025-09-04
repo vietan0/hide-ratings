@@ -1,10 +1,11 @@
-import browser from 'webextension-polyfill';
+import type { ExtStorage, Rating, TimeControl } from './storageTypes';
 import { debounce } from 'es-toolkit';
+import browser from 'webextension-polyfill';
 import capitalize from './capitalize';
-import renderSvg from './renderSvg';
-import { type ExtStorage, type Rating, type TimeControl, ratings, timeControls } from './storageTypes';
 import getFenFromUrl from './getFenFromUrl';
 import maxDepthReached from './maxDepthReached';
+import renderSvg from './renderSvg';
+import { ratings, timeControls } from './storageTypes';
 
 type Opening = {
   eco: string;

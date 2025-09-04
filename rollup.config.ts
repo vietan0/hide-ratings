@@ -1,12 +1,12 @@
 import process from 'node:process';
-import { defineConfig } from 'rollup';
-import typescript from '@rollup/plugin-typescript';
-import terser from '@rollup/plugin-terser';
-import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
+import json from '@rollup/plugin-json';
+import { nodeResolve } from '@rollup/plugin-node-resolve';
+import terser from '@rollup/plugin-terser';
+import typescript from '@rollup/plugin-typescript';
+import { defineConfig } from 'rollup';
 import copy from 'rollup-plugin-copy';
 import del from 'rollup-plugin-delete';
-import json from '@rollup/plugin-json';
 
 if (!process.env.BROWSER) {
   throw new Error('BROWSER is missing, must specify using --environment flag.');
