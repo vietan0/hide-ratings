@@ -15,17 +15,13 @@ Chess.com Tweaks is a Firefox extension that enhances your Chess.com experience 
 Hide all players' ratings in games and stats.
 
 ![ratings hidden in game archive](./screenshots/hideRatings-game-component.jpg)
-![ratings hidden in stats](./screenshots/hideRatings-stats-overview.jpg)
-![ratings & highest rating hidden in chart](./screenshots/hideRatings-chart.jpg)
-![ratings hidden in /stats/overview](./screenshots/hideRatings-stats-overview.jpg)
-![ratings hidden in /stats/live/rapid](./screenshots/hideRatings-stats-rapid.jpg)
+![ratings hidden in stats](./screenshots/hideRatings-stats.jpg)
 
 ### Hide Opponent During Game
 
 Hide opponent details (name, avatar, title, rating, etc.) when playing
 
 ![hide opponent](./screenshots/hideOpponent.jpg)
-![hide opponent in focus mode](./screenshots/hideOpponent-focusMode.jpg)
 
 ### Hide Flags
 
@@ -44,7 +40,6 @@ Hide the flag next to your username on the homepage
 Add buttons that send your finished games to the Lichess analysis page
 
 ![analyze on lichess](./screenshots/analyzeOnLichess.jpg)
-![analyze on lichess sidebar](./screenshots/analyzeOnLichess-sidebar.jpg)
 
 ### Opening Explorer
 
