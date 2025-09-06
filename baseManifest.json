@@ -3,7 +3,7 @@
   "name": "Chess.com Tweaks",
   "version": "1.7.3",
   "homepage_url": "https://github.com/vietan0/hide-ratings",
-  "description": "Chess.com Tweaks is a Firefox extension that enhances your Chess.com experience by decluttering the interface and providing additional analysis tools.",
+  "description": "Chess.com Tweaks is a browser extension that enhances your chess experience with a cleaner interface and additional analysis tools.",
   "icons": {
     "128": "icons/chesslogo.png"
   },
