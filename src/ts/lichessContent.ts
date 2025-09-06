@@ -1,6 +1,12 @@
-function connectToBackground() {
+import browser from 'webextension-polyfill';
+
+function connect() {
   const port = browser.runtime.connect({ name: 'my-lichess-content-script-port' });
   port.postMessage({ command: 'requestPgn' });
+
+  port.onDisconnect.addListener(() => {
+    connect();
+  });
 
   port.onMessage.addListener(async (message) => {
     const msgTyped = message as { pgn: string };
@@ -23,4 +29,4 @@ function connectToBackground() {
   });
 }
 
-connectToBackground();
+connect();

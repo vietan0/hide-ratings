@@ -1,13 +1,13 @@
-.player-component.player-top
-  .player-avatar-component.player-avatar
-  > img:first-child {
+.player-component.player-top .player-avatar-component.player-avatar > img:first-child {
   display: none;
 }
 
-.player-component.player-top
-  .player-tagline
-  .cc-user-block-component
-  > :not(.connection-component) {
+.player-component.player-top .player-tagline .cc-user-block-component > :not(.connection-component) {
+  display: none;
+}
+
+/* grudge-score: hide from both sides */
+.player-component .grudge-score-component {
   display: none;
 }
 
@@ -20,9 +20,7 @@
 }
 
 /* focus mode player title */
-.player-component.player-top.player-theatre
-  .player-avatar
-  .user-chess-title-component {
+.player-component.player-top.player-theatre .player-avatar .user-chess-title-component {
   display: none;
 }
 

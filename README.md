@@ -1,10 +1,30 @@
-# Chess.com Tweaks - Hide ratings, hide opponent and more!
+<p align="center">
+  <img width="96" height="96" src="src/icons/chesslogo.png">
+</p>
+<h1 align="center">Chess.com Tweaks</h1>
+<p align="center">Chess.com Tweaks is a browser extension that enhances your chess experience with a cleaner interface and additional analysis tools.</p>
 
-[![Firefox Addons Link](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Faddons.mozilla.org%2Fapi%2Fv5%2Faddons%2Faddon%2Fchesscom-tweaks%2F&query=%24.current_version.version&logo=firefoxbrowser&logoColor=white&label=Firefox)](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
-
-Chess.com Tweaks is a Firefox extension that enhances your Chess.com experience by decluttering the interface and providing additional analysis tools.
-
-[<img src="https://extensionworkshop.com/assets/img/documentation/publish/get-the-addon-178x60px.dad84b42.png" alt="">](https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/)
+<div align="center">
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/">
+    <picture>
+      <source srcset="https://i.imgur.com/ZluoP7T.png" media="(prefers-color-scheme: dark)">
+    <img height="58" src="https://i.imgur.com/4PobQqE.png" alt="Firefox Addons"></picture>
+  </a>
+  <a href="https://chromewebstore.google.com/detail/chesscom-tweaks/bcpipkaoloecgjihcocbdnlkmcedjlcg">
+    <picture>
+      <source srcset="https://i.imgur.com/hcbQhpp.png" media="(prefers-color-scheme: dark)">
+      <img height="58" src="https://i.imgur.com/ClF2bZl.png" alt="Chrome Web Store"></picture></a>
+    <picture>
+  </a>
+</div>
+<div align="center">
+  <a href="https://addons.mozilla.org/en-US/firefox/addon/chesscom-tweaks/">
+    <img src="https://img.shields.io/amo/v/%7Bb8ac3f83-6217-4483-a9a5-1c4e2908be4f%7D?logo=firefoxbrowser&logoColor=white&label=Firefox" alt="Firefox Addons Link" />
+  </a>
+  <a href="https://chromewebstore.google.com/detail/chesscom-tweaks/bcpipkaoloecgjihcocbdnlkmcedjlcg">
+    <img src="https://img.shields.io/chrome-web-store/v/bcpipkaoloecgjihcocbdnlkmcedjlcg?logo=googlechrome&logoColor=white&label=Chrome" alt="Chrome Web Store Link" />
+  </a>
+</div>
 
 ## Features
 
@@ -15,17 +35,13 @@ Chess.com Tweaks is a Firefox extension that enhances your Chess.com experience 
 Hide all players' ratings in games and stats.
 
 ![ratings hidden in game archive](./screenshots/hideRatings-game-component.jpg)
-![ratings hidden in stats](./screenshots/hideRatings-stats-overview.jpg)
-![ratings & highest rating hidden in chart](./screenshots/hideRatings-chart.jpg)
-![ratings hidden in /stats/overview](./screenshots/hideRatings-stats-overview.jpg)
-![ratings hidden in /stats/live/rapid](./screenshots/hideRatings-stats-rapid.jpg)
+![ratings hidden in stats](./screenshots/hideRatings-stats.jpg)
 
 ### Hide Opponent During Game
 
 Hide opponent details (name, avatar, title, rating, etc.) when playing
 
 ![hide opponent](./screenshots/hideOpponent.jpg)
-![hide opponent in focus mode](./screenshots/hideOpponent-focusMode.jpg)
 
 ### Hide Flags
 
@@ -44,7 +60,6 @@ Hide the flag next to your username on the homepage
 Add buttons that send your finished games to the Lichess analysis page
 
 ![analyze on lichess](./screenshots/analyzeOnLichess.jpg)
-![analyze on lichess sidebar](./screenshots/analyzeOnLichess-sidebar.jpg)
 
 ### Opening Explorer
 

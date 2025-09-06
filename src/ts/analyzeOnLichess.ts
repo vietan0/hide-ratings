@@ -1,9 +1,11 @@
+import browser from 'webextension-polyfill';
+
 export const analyzeOnLichessClass = 'analyzeOnLichess';
 
 /**
  * @returns A button that sends the game to Lichess analysis page
  */
-export function createAnalyzeOnLichessBtn(port: browser.runtime.Port, variant: 'default' | 'small' | 'icon' = 'default') {
+export function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default' | 'small' | 'icon' = 'default') {
   let btn: HTMLDivElement | HTMLButtonElement;
 
   function handleClick() {
@@ -66,7 +68,7 @@ export function createAnalyzeOnLichessBtn(port: browser.runtime.Port, variant: '
     });
 
     const icon = document.createElement('img');
-    icon.src = browser.runtime.getURL('src/icons/SimpleIconsLichess.svg');
+    icon.src = browser.runtime.getURL('../icons/SimpleIconsLichess.svg');
     icon.style = 'width: 20px';
     btn.append(icon);
   }
@@ -93,7 +95,7 @@ export function createAnalyzeOnLichessBtn(port: browser.runtime.Port, variant: '
 
       span.className = 'cc-button-one-line';
       const icon = document.createElement('img');
-      icon.src = browser.runtime.getURL('src/icons/SimpleIconsLichess.svg');
+      icon.src = browser.runtime.getURL('../icons/SimpleIconsLichess.svg');
       icon.style = 'width: 24px';
       anchor.append(icon);
       anchor.append(span);
@@ -122,7 +124,7 @@ export function createAnalyzeOnLichessBtn(port: browser.runtime.Port, variant: '
   return btn;
 }
 
-export function addBtnToPlaces(port: browser.runtime.Port) {
+export function addBtnToPlaces(port: browser.Runtime.Port) {
   const gameOverModalBtns = document.querySelector('.game-over-modal-buttons');
   const gameReviewBtnSidebar = document.querySelector('.sidebar-component .game-review-buttons-component');
   const focusModeSidebarBottom = document.querySelector('.focus-mode-sidebar-bottom');

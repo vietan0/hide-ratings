@@ -1,3 +1,5 @@
+import browser from 'webextension-polyfill';
+
 function getTopPlayerColor() {
   const clock = document.querySelector('.player-component.player-top > .clock-component');
   if (clock && clock.classList.contains('clock-white'))
@@ -12,10 +14,12 @@ export function overrideImg() {
   if (document.getElementById(placeholderImgId))
     return;
   const imgContainer = document.querySelector('.player-component.player-top .player-avatar-component.player-avatar');
+  if (!imgContainer)
+    return;
   const placeholderImg = document.createElement('img');
   placeholderImg.id = placeholderImgId;
-  placeholderImg.src = browser.runtime.getURL(`src/images/${getTopPlayerColor()}.png`);
-  imgContainer!.append(placeholderImg);
+  placeholderImg.src = browser.runtime.getURL(`../images/${getTopPlayerColor()}.png`);
+  imgContainer.append(placeholderImg);
 }
 
 export function restoreImg() {

@@ -1,4 +1,5 @@
-import { type ExtStorage, isFeatureId } from './storageTypes';
+import type { ExtStorage } from './storageTypes';
+import browser from 'webextension-polyfill';
 
 const initialStorage: ExtStorage = {
   hideRatings: false,
@@ -24,6 +25,29 @@ const initialStorage: ExtStorage = {
 };
 
 browser.runtime.onInstalled.addListener(async (details) => {
+  let start = Date.now();
+  browser.alarms.create('keepAlive', { periodInMinutes: 0.5 });
+
+  browser.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'keepAlive') {
+      const end = Date.now();
+      const elapsed = ((end - start) / 1000).toFixed(1);
+      console.info('BG is alive again after', elapsed, 's'); // This log confirms the service worker is being kept alive
+      start = end;
+    }
+  });
+
+  const url = browser.runtime.getURL('');
+
+  if (url.startsWith('chrome')) {
+    const tabs = await browser.tabs.query({ url: 'https://www.chess.com/*' });
+
+    for (const tab of tabs) {
+      // refresh - in Chrome, content scripts aren't auto-injected on install/update
+      browser.tabs.reload(tab.id);
+    }
+  }
+
   if (details.reason === 'install') {
     await browser.storage.local.set(initialStorage);
   }
@@ -50,17 +74,17 @@ function getCSSDetails(filename: string, tabId: number | undefined) {
   if (tabId === undefined)
     throw new Error(`tabId is undefined`);
 
-  return { files: [`src/css/${filename}.css`], target: { tabId } };
+  return { files: [`css/${filename}.css`], target: { tabId } };
 }
 
-let port: browser.runtime.Port;
+let port: browser.Runtime.Port;
 let pgn: string | undefined;
 
 browser.runtime.onConnect.addListener((p) => {
   port = p;
 
   port.onMessage.addListener(async (message) => {
-    const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+    const tabs = await browser.tabs.query({ url: 'https://www.chess.com/*' });
     const msgTyped = message as { command: string; pgn?: string };
 
     switch (msgTyped.command) {
@@ -112,22 +136,28 @@ browser.runtime.onConnect.addListener((p) => {
         throw new Error(`Unhandled message.command: ${msgTyped.command}`);
     }
   });
+
+  port.onDisconnect.addListener(() => {
+    if (browser.runtime.lastError) {
+      if (browser.runtime.lastError.message === 'The page keeping the extension port is moved into back/forward cache, so the message channel is closed.')
+        return; // can safely ignore
+
+      console.error(browser.runtime.lastError);
+    }
+  });
 });
 
 browser.storage.local.onChanged.addListener(async (changes) => {
-  const entries = Object.entries(changes) as [keyof ExtStorage, browser.storage.StorageChange][];
+  const entries = Object.entries(changes) as [keyof ExtStorage, browser.Storage.StorageChange][];
   const [changedKey, { newValue }] = entries[0]!;
 
-  if (isFeatureId(changedKey)) {
-    if (!['hideOpponent', 'analyzeOnLichess', 'analysisLinkInArchive'].includes(changedKey)) {
-    // changes to hideOpponent, analyzeOnLichess and analysisLinkInArchive are handled by content script
-      const tabs = await browser.tabs.query({ url: '*://www.chess.com/*' });
+  if (['hideRatings', 'hideFlags', 'hideOwnFlagOnHome'].includes(changedKey)) {
+    const tabs = await browser.tabs.query({ url: 'https://www.chess.com/*' });
 
-      Promise.all(tabs.map(({ id }) =>
-        newValue
-          ? browser.scripting.insertCSS(getCSSDetails(changedKey, id))
-          : browser.scripting.removeCSS(getCSSDetails(changedKey, id)),
-      ));
-    }
+    Promise.all(tabs.map(({ id }) =>
+      newValue
+        ? browser.scripting.insertCSS(getCSSDetails(changedKey, id))
+        : browser.scripting.removeCSS(getCSSDetails(changedKey, id)),
+    ));
   }
 });

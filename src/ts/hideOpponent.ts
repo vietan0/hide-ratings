@@ -1,7 +1,8 @@
+import type { ExtStorage } from './storageTypes';
+import browser from 'webextension-polyfill';
 import { overrideImg, placeholderImgId, restoreImg } from './changeImg';
 import { overrideUsername, placeholderUsername, restoreUsername } from './changeUsername';
 import isGameOver from './isGameOver';
-import type { ExtStorage } from './storageTypes';
 
 // details: https://regexr.com/8gcck
 export const hideOpponentRegex = /chess.com\/(?:game\/(?:live\/|daily\/)?\d+|play\/online\/new)/;
@@ -42,14 +43,23 @@ export function hideOpponentInEffect() {
   return Boolean(placeholderImg || placeholderUsernameDiv);
 }
 
-export function startHideOpponent(port: browser.runtime.Port) {
-  port.postMessage({ command: 'hideOpponent' });
+let isCSSInserted = false;
+
+export function startHideOpponent(port: browser.Runtime.Port) {
+  /* Unlike overrideImg and overrideUsername,
+  insertCSS can be duplicated (happens in Chrome). This flag check prevents that. */
+  if (!isCSSInserted) {
+    port.postMessage({ command: 'hideOpponent' });
+    isCSSInserted = true;
+  }
+
   overrideImg();
   overrideUsername();
 }
 
-export function stopHideOpponent(port: browser.runtime.Port) {
+export function stopHideOpponent(port: browser.Runtime.Port) {
   port.postMessage({ command: 'unhideOpponent' });
+  isCSSInserted = false;
   restoreImg();
   restoreUsername();
 }
@@ -59,7 +69,7 @@ export function stopHideOpponent(port: browser.runtime.Port) {
  * 1. When port first connects
  * 2. In mutation observer
  */
-export async function hideOrUnhide(port: browser.runtime.Port) {
+export async function hideOrUnhide(port: browser.Runtime.Port) {
   if (hideOpponentInEffect() && isGameOver()) {
     stopHideOpponent(port);
   }

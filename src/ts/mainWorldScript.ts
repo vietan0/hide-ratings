@@ -1,4 +1,5 @@
-import { type WCChessBoard, ccTweaksTag } from './wcChessBoardTypes';
+import type { WCChessBoard } from './wcChessBoardTypes';
+import { ccTweaksTag } from './wcChessBoardTypes';
 
 const color = '#a09bfa';
 
@@ -53,7 +54,7 @@ document.addEventListener('removeArrow', (e) => {
     When clicking a row (state: on):
       1. openingExplorer rerenders which triggers 'removeAllArrow' -> (state: off),
       2. then mouseleave event triggers 'removeArrow' -> (state: on)
-      -> 'removeArrow' would mistakenly turn on an arrow that's has been removed by 'removeAllArrow'
+      -> 'removeArrow' would mistakenly turn on an arrow that has been removed by 'removeAllArrow'
     That's why a condition is needed:
    */
   if (allCCTweaksArrows.find(arrow => arrow.key.includes(uci))) {

@@ -11,7 +11,7 @@ export const timeControls = ['ultraBullet', 'bullet', 'blitz', 'rapid', 'classic
 export type TimeControl = typeof timeControls[number];
 export const ratings = [400, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500] as const;
 export type Rating = typeof ratings[number];
-export interface ExtStorage extends FeatureStorage {
+export type ExtStorage = FeatureStorage & {
   database: 'lichess' | 'masters';
   databaseOptions: {
     lichess: {
@@ -25,4 +25,4 @@ export interface ExtStorage extends FeatureStorage {
       until: number | undefined;
     };
   };
-}
+};
