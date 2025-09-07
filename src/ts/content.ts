@@ -300,11 +300,28 @@ async function content() {
   }
 }
 
+/**
+ * Renew `Analyze on Lichess` buttons after a reconnection,
+ * else the old `onclick` handlers would have a port pointing to nowhere,
+ * resulting in a `Error: Attempt to postMessage on disconnected port`.
+ */
+async function renewAnalyzeOnLichessBtns() {
+  const { analyzeOnLichess } = await browser.storage.local.get() as ExtStorage;
+
+  if (analyzeOnLichess
+    && window.location.href.match(analyzeOnLichessRegex)
+    && isGameOver()) {
+    removeAllBtns();
+    addBtnToPlaces(port);
+  }
+}
+
 function connect() {
   port = browser.runtime.connect({ name: 'my-content-script-port' });
 
   port.onDisconnect.addListener(() => {
     connect();
+    renewAnalyzeOnLichessBtns();
   });
 }
 
@@ -312,18 +329,7 @@ window.addEventListener('pageshow', async (event) => {
   if (event.persisted) {
     // The page is restored from BFCache, set up a new connection.
     connect();
-
-    const { analyzeOnLichess } = await browser.storage.local.get() as ExtStorage;
-
-    if (analyzeOnLichess) {
-      if (window.location.href.match(analyzeOnLichessRegex)) {
-        if (isGameOver()) {
-          // replace buttons, because port is stale -> onclick handlers wouldn't work
-          removeAllBtns();
-          addBtnToPlaces(port);
-        }
-      }
-    }
+    renewAnalyzeOnLichessBtns();
   }
 });
 

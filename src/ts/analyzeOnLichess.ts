@@ -5,7 +5,7 @@ export const analyzeOnLichessClass = 'analyzeOnLichess';
 /**
  * @returns A button that sends the game to Lichess analysis page
  */
-export function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default' | 'small' | 'icon' = 'default') {
+function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default' | 'small' | 'icon' = 'default') {
   let btn: HTMLDivElement | HTMLButtonElement;
 
   function handleClick() {
