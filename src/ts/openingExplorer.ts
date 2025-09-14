@@ -746,4 +746,5 @@ export async function renderOpeningExplorer() {
   await updateFen();
 }
 
-export const openingExplorerRegex = /chess.com\/analysis/;
+// details: https://regexr.com/8h4ik
+export const openingExplorerRegex = /chess.com\/(?:analysis|a\/[a-zA-Z0-9]+\/analysis)/;
