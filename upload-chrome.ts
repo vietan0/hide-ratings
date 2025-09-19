@@ -49,8 +49,8 @@ async function uploadChrome() {
 
   const command = `chrome-webstore-upload upload ${parseArgs(args)}`;
   const { stdout, stderr } = await exec(command);
-  console.log('stdout:', stdout);
-  console.error('stderr:', stderr);
+  stdout && console.log('stdout:', stdout);
+  stderr && console.error('stderr:', stderr);
 }
 
 uploadChrome();
