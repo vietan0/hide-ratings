@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "scripts": {
     "build": "node --max-old-space-size=8192 node_modules/rollup/dist/bin/rollup -c rollup.config.ts --configPlugin typescript",
     "build:firefox": "rm -rf dist/firefox && pnpm run build --environment BROWSER:firefox",
