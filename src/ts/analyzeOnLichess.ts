@@ -6,7 +6,7 @@ export const analyzeOnLichessClass = 'analyzeOnLichess';
  * @returns A button that sends the game to Lichess analysis page
  */
 function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default' | 'small' | 'icon' = 'default') {
-  let btn: HTMLDivElement | HTMLButtonElement;
+  let btn: HTMLAnchorElement | HTMLButtonElement;
 
   function handleClick() {
     const focusMode = document.body.classList.contains('theatre-mode');
@@ -73,19 +73,11 @@ function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default
     btn.append(icon);
   }
   else {
-    btn = document.createElement('div');
-    const anchor = document.createElement('a');
-    btn.append(anchor);
-    const span = document.createElement('span');
-    span.textContent = 'Analyze on Lichess';
+    btn = document.createElement('a');
+    btn.className = 'cc-button-component cc-button-primary cc-button-xx-large cc-bg-primary cc-button-full';
+    btn.textContent = 'Analyze on Lichess';
 
-    if (variant === 'default') {
-      btn.className = 'game-review-buttons-component';
-      btn.style = 'margin-bottom: 0.5rem;';
-
-      anchor.className = 'cc-button-component cc-button-primary cc-button-xx-large cc-bg-primary cc-button-full';
-
-      anchor.style = `
+    btn.style = `
             --fontSize: 1.8rem;
             --bgColor: #383634;
             --bgColorHover: #474542;
@@ -93,28 +85,15 @@ function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default
             --buttonBoxShadowHover: rgba(40, 40, 40, 0.2) 0px 0px 8px 0px, rgba(40, 40, 40, 0.2) 0px 0px 16px 0px, rgba(40, 40, 40, 0.5) 0px -8px 24px 0px inset, rgb(40, 40, 40) 0px -4px 0px 0px inset;
           `;
 
-      span.className = 'cc-button-one-line';
+    if (variant === 'default') {
       const icon = document.createElement('img');
       icon.src = browser.runtime.getURL('../icons/SimpleIconsLichess.svg');
       icon.style = 'width: 24px';
-      anchor.append(icon);
-      anchor.append(span);
+      btn.prepend(icon);
     }
     else {
       // variant === 'small'
-      btn.className = 'quick-analysis-loader-component';
-      anchor.className = 'cc-button-component cc-button-primary cc-button-xx-large cc-bg-primary cc-button-full quick-analysis-loader-background';
-
-      anchor.style = `
-            width: 100%;
-            --bgColor: #383634;
-            --bgColorHover: #474542;
-            --borderBottomLine: #2b2a28;
-            --buttonBoxShadowHover: rgba(40, 40, 40, 0.2) 0px 0px 8px 0px, rgba(40, 40, 40, 0.2) 0px 0px 16px 0px, rgba(40, 40, 40, 0.5) 0px -8px 24px 0px inset, rgb(40, 40, 40) 0px -4px 0px 0px inset;
-            `;
-
-      span.className = 'quick-analysis-loader-label';
-      btn.append(span);
+      btn.classList.add('game-over-review-button-game-over-review-button');
     }
   }
 
@@ -135,7 +114,7 @@ export function addBtnToPlaces(port: browser.Runtime.Port) {
   }
 
   if (gameReviewBtnSidebar && !gameReviewBtnSidebar.parentElement!.querySelector(`.${analyzeOnLichessClass}`)) {
-    gameReviewBtnSidebar.insertAdjacentElement('beforebegin', createAnalyzeOnLichessBtn(port));
+    gameReviewBtnSidebar.insertAdjacentElement('afterbegin', createAnalyzeOnLichessBtn(port));
   }
 
   if (focusModeSidebarBottom && !focusModeSidebarBottom.querySelector(`.${analyzeOnLichessClass}`)) {
