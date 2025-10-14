@@ -20,7 +20,7 @@ function addHeaderCell() {
 
 function addLinkCells() {
   async function addLink(cell: HTMLTableCellElement) {
-    const archivedGameLink = cell.querySelector('a.archived-games-background-link, a.archive-games-background-link');
+    const archivedGameLink = cell.querySelector('a');
     const originalHref = archivedGameLink!.getAttribute('href');
 
     if (cell.nextElementSibling
