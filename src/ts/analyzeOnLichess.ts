@@ -42,9 +42,11 @@ function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default
         }
       }
 
-      if (Date.now() - startTrying > 2000) {
+      const timeout = 4000;
+
+      if (Date.now() - startTrying > timeout) {
         clearInterval(pgnTabBtnInterval);
-        console.error('Unable to find pgnTabBtn after 2 seconds');
+        console.error(`Unable to find pgnTabBtn after ${timeout / 1000} seconds`);
       }
     }, 100);
   }
