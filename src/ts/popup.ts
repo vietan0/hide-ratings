@@ -4,12 +4,13 @@ import features from './features';
 import renderSvg from './renderSvg';
 import { isFeatureId } from './storageTypes';
 
-async function renderSwitch(featureId: FeatureId, btn: HTMLButtonElement) {
+async function createSwitchIcon(featureId: FeatureId) {
   const storage = await browser.storage.local.get(featureId) as Pick<FeatureStorage, typeof featureId>;
   const switchIcon = await renderSvg(`../icons/${storage[featureId] ? 'MdiToggleSwitch' : 'MdiToggleSwitchOff'}.svg`);
   switchIcon.classList.add('max-w-8', storage[featureId] ? 'text-[#81b64c]' : 'text-zinc-500');
   switchIcon.id = `switch-${featureId}`;
-  btn.append(switchIcon);
+
+  return switchIcon;
 }
 
 async function handleClick(e: MouseEvent) {
@@ -41,17 +42,17 @@ async function renderBtns() {
     descSpan.textContent = description;
     infoDiv.append(descSpan);
 
-    renderSwitch(id, btn);
+    const switchIcon = await createSwitchIcon(id);
+    btn.append(switchIcon);
     btn.onclick = handleClick;
     document.getElementsByTagName('main').item(0)!.append(btn);
   }
 }
 
-function updateSwitchIcon(featureId: FeatureId) {
-  const btn = document.getElementById(featureId) as HTMLButtonElement;
+async function updateSwitchIcon(featureId: FeatureId) {
+  const newSwitchIcon = await createSwitchIcon(featureId);
   const oldSwitchIcon = document.getElementById(`switch-${featureId}`)!;
-  renderSwitch(featureId, btn);
-  oldSwitchIcon.remove();
+  oldSwitchIcon.replaceWith(newSwitchIcon);
 }
 
 renderBtns();
