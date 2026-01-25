@@ -1,4 +1,4 @@
-.player-component.player-top .player-avatar-component.player-avatar > img:first-child {
+.player-component.player-top .cc-avatar-img {
   display: none;
 }
 

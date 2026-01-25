@@ -13,7 +13,7 @@ export const placeholderImgId = 'placeholderImg';
 export function overrideImg() {
   if (document.getElementById(placeholderImgId))
     return;
-  const imgContainer = document.querySelector('.player-component.player-top .player-avatar-component.player-avatar');
+  const imgContainer = document.querySelector('.player-component.player-top .cc-avatar-component');
   if (!imgContainer)
     return;
   const placeholderImg = document.createElement('img');
