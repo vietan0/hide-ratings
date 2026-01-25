@@ -2,6 +2,10 @@ import browser from 'webextension-polyfill';
 
 export const analyzeOnLichessClass = 'analyzeOnLichess';
 
+function isFocusMode() {
+  return document.body.classList.contains('theatre-mode');
+}
+
 /**
  * @returns A button that sends the game to Lichess analysis page
  */
@@ -9,46 +13,64 @@ function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default
   let btn: HTMLAnchorElement | HTMLButtonElement;
 
   function handleClick() {
-    const focusMode = document.body.classList.contains('theatre-mode');
-
-    if (focusMode) {
+    let fromFocusMode = false;
+    if (isFocusMode()) {
       // get out of focus mode
-      const minimizeBtn = document.querySelector<HTMLButtonElement>('.board-layout-icon.icon-font-chess.minimize')!;
-      minimizeBtn.click();
+      fromFocusMode = true;
+      const focusModeToggleBtn = document.getElementById('board-controls-focus')!;
+      focusModeToggleBtn.click();
     }
+    
+    const timeout = 4000;
+    const delay = 100;
+    const startFindingShareBtn = Date.now();
 
-    const shareBtn = document.querySelector<HTMLButtonElement>('.live-game-buttons-component > [aria-label="Share"],.game-icons-container-component > [aria-label="Share"]')!;
+    const shareBtnInterval = setInterval(() => {
+      const shareBtn = document.querySelector<HTMLButtonElement>('.live-game-buttons-component > [aria-label="Share"],.game-icons-container-component > [aria-label="Share"]');
 
-    shareBtn.click();
+      if (shareBtn) {
+        shareBtn.click();
+        clearInterval(shareBtnInterval);
 
-    const startTrying = Date.now();
+        const startFindingPgnTabBtn = Date.now();
 
-    const pgnTabBtnInterval = setInterval(() => {
-      // 'polling' for the btn every 100ms
-      const pgnTabBtn = document.getElementById('tab-pgn');
+        const pgnTabBtnInterval = setInterval(() => {
+          // 'polling' for the btn every 100ms
+          const pgnTabBtn = document.getElementById('tab-pgn');
 
-      if (pgnTabBtn) {
-        pgnTabBtn.click();
-        const textarea = document.querySelector<HTMLTextAreaElement>('.share-menu-tab-pgn-pgn-wrapper > textarea')!;
+          if (pgnTabBtn) {
+            pgnTabBtn.click();
+            const textarea = document.querySelector<HTMLTextAreaElement>('.share-menu-tab-pgn-pgn-wrapper > textarea')!;
 
-        if (textarea) {
-          clearInterval(pgnTabBtnInterval);
-          const pgn = textarea.value;
-          const closeBtn = document.querySelector<HTMLButtonElement>('#share-modal [aria-label="Close"]');
-          closeBtn!.click();
-          port.postMessage({ command: 'openLichessTab', pgn });
+            if (textarea) {
+              clearInterval(pgnTabBtnInterval);
+              const pgn = textarea.value;
+              const closeBtn = document.querySelector<HTMLButtonElement>('#share-modal [aria-label="Close"]');
+              closeBtn!.click();
 
-          return;
-        }
+              if (fromFocusMode) {
+                const focusModeToggleBtn = document.getElementById('board-controls-focus')!;
+                focusModeToggleBtn.click();
+              }
+
+              port.postMessage({ command: 'openLichessTab', pgn });
+
+              return;
+            }
+          }
+
+          if (Date.now() - startFindingPgnTabBtn > timeout) {
+            clearInterval(pgnTabBtnInterval);
+            console.error(`Unable to find pgnTabBtn after ${timeout / 1000} seconds`);
+          }
+        }, delay);
       }
-
-      const timeout = 4000;
-
-      if (Date.now() - startTrying > timeout) {
-        clearInterval(pgnTabBtnInterval);
-        console.error(`Unable to find pgnTabBtn after ${timeout / 1000} seconds`);
+      
+      if (Date.now() - startFindingShareBtn > timeout) {
+        clearInterval(shareBtnInterval);
+        console.error(`Unable to find shareBtn after ${timeout / 1000} seconds`);
       }
-    }, 100);
+    }, delay);
   }
 
   if (variant === 'icon') {
@@ -76,22 +98,57 @@ function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default
   }
   else {
     btn = document.createElement('a');
-    btn.className = 'cc-button-component cc-button-primary cc-button-xx-large cc-bg-primary cc-button-full';
+    btn.className = 'cc-button-component cc-button-primary cc-button-xx-large cc-bg-primary';
     btn.textContent = 'Analyze on Lichess';
-
+    
     btn.style = `
-            --fontSize: 1.8rem;
-            --bgColor: #383634;
-            --bgColorHover: #474542;
-            --borderBottomLine: #2b2a28;
-            --buttonBoxShadowHover: rgba(40, 40, 40, 0.2) 0px 0px 8px 0px, rgba(40, 40, 40, 0.2) 0px 0px 16px 0px, rgba(40, 40, 40, 0.5) 0px -8px 24px 0px inset, rgb(40, 40, 40) 0px -4px 0px 0px inset;
-          `;
+      --cc-bg-color: linear-gradient(
+        180deg,
+        var(--color-gray-700) 0%,
+        var(--color-gray-800) 100%
+      );
+      --cc-bg-color-hover:
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--color-gray-600), transparent 50%) 0%,
+          transparent 100%
+        ),
+        linear-gradient(
+          180deg,
+          var(--color-gray-700) 0%,
+          var(--color-gray-800) 100%
+        );
+      --cc-bg-box-shadow:
+        inset 0 0.1rem 0 0
+          color-mix(in srgb, var(--color-gray-600), transparent 60%),
+        inset 0 -0.1rem 0 0 var(--color-gray-900),
+        inset 0 0.2rem 0.4rem 0
+          color-mix(in srgb, var(--color-gray-600), transparent 50%),
+        inset 0 -0.2rem 0.4rem 0
+          color-mix(in srgb, var(--color-gray-900), transparent 50%),
+        0 0.1rem 0.2rem 0 var(--color-transparent-black-14),
+        0 0.2rem 0.4rem 0 var(--color-transparent-black-10);
+      --cc-bg-box-shadow-hover:
+        inset 0 0.1rem 0 0
+          color-mix(in srgb, var(--color-gray-500), transparent 60%),
+        inset 0 0.2rem 0.4rem 0
+          color-mix(in srgb, var(--color-gray-600), transparent 50%),
+        inset 0 -0.1rem 0 0 var(--color-gray-900),
+        inset 0 -0.2rem 0.4rem 0
+          color-mix(in srgb, var(--color-gray-900), transparent 50%),
+        0 0.1rem 0.2rem 0 var(--color-transparent-black-14),
+        0 0.2rem 0.4rem 0 var(--color-transparent-black-10);
+    `;
 
     if (variant === 'default') {
       const icon = document.createElement('img');
       icon.src = browser.runtime.getURL('../icons/SimpleIconsLichess.svg');
       icon.style = 'width: 24px';
       btn.prepend(icon);
+
+      if (isFocusMode()) {
+        btn.classList.add('game-over-review-button-game-over-review-button');
+      }
     }
     else {
       // variant === 'small'
