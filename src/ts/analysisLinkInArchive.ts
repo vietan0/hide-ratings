@@ -20,9 +20,6 @@ function addHeaderCell() {
 
 function addLinkCells() {
   async function addLink(cell: HTMLTableCellElement) {
-    const archivedGameLink = cell.querySelector('a');
-    const originalHref = archivedGameLink!.getAttribute('href');
-
     if (cell.nextElementSibling
       && cell.nextElementSibling.classList.contains(analysisLinkInArchiveClass)) {
       // already exist
@@ -32,7 +29,11 @@ function addLinkCells() {
     const analysisCell = document.createElement('td');
     analysisCell.className = `${analysisLinkInArchiveClass} table-text-center`;
     const anchor = document.createElement('a');
-    anchor.href = `${originalHref}/analysis`;
+    const archivedGameLink = cell.querySelector('a');
+    const oriHref = archivedGameLink!.getAttribute('href')!;
+    // regex demonstration: https://regexr.com/8glks
+    const hrefToAnalysis = oriHref.replace(/^[\/\.\:-\w+]+\d+(?=\?\w+|$)/, "$&/analysis");
+    anchor.href = hrefToAnalysis;
 
     const analyzeIcon = await renderSvg('../icons/Analyze.svg');
     anchor.append(analyzeIcon);
