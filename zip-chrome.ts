@@ -12,7 +12,7 @@ async function zipChrome() {
   });
 
   const manifest = JSON.parse(await readFile('dist/chrome/manifest.json', 'utf-8'));
-  const destination = `./web-ext-artifacts/chrome/chrome-${manifest.name.replace(' ', '_').toLowerCase()}-${manifest.version}.zip`;
+  const destination = `./web-ext-artifacts/chrome/chrome-${manifest.name.replaceAll(' ', '_').toLowerCase()}-${manifest.version}.zip`;
   zip.writeZip(destination);
 }
 
