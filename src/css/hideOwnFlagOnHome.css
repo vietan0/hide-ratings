@@ -1,3 +1,4 @@
-.home-user-badges > .cc-country-flag-component {
+.home-user-badges > .cc-country-flag-component, /* old UI */
+.header-profile .cc-country-flag-component /* new UI */ {
   display: none;
 }
