@@ -85,7 +85,7 @@ browser.runtime.onConnect.addListener((p) => {
 
   port.onMessage.addListener(async (message) => {
     const tabs = await browser.tabs.query({ url: 'https://www.chess.com/*' });
-    const msgTyped = message as { command: string; pgn?: string };
+    const msgTyped = message as { command: string; pgn?: string; url?: string };
 
     switch (msgTyped.command) {
       case 'hideRatings':
@@ -107,6 +107,20 @@ browser.runtime.onConnect.addListener((p) => {
       case 'openLichessTab': {
         pgn = msgTyped.pgn;
         browser.tabs.create({ url: 'https://lichess.org/paste' });
+        break;
+      }
+
+      case 'fetchLichess': {
+        const cookies = await browser.cookies.getAll({ domain: 'lichess.org' });
+        const lila2Cookie = cookies.find(cookie => cookie.name === 'lila2')?.value;
+
+        const res = await fetch('https://chess-com-tweaks-server.vercel.app/', {
+          method: 'POST',
+          body: JSON.stringify({ url: msgTyped.url, lila2Cookie }),
+        });
+
+        const result = await res.json();
+        port.postMessage({ command: 'lichessResult', url: msgTyped.url, result });
         break;
       }
 

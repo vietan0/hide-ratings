@@ -9,13 +9,14 @@
   },
   "permissions": [
     "alarms",
+    "cookies",
     "scripting",
     "storage"
   ],
   "host_permissions": [
     "https://www.chess.com/*",
-    "https://explorer.lichess.ovh/*",
-    "https://lichess.org/paste"
+    "https://explorer.lichess.org/*",
+    "https://lichess.org/*"
   ],
   "background": {
     "scripts": ["js/background.js"],

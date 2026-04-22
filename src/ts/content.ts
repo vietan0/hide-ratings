@@ -5,8 +5,7 @@ import { addBtnToPlaces, analyzeOnLichessRegex, removeAllBtns } from './analyzeO
 import { checkHideOpponentConds, hideOpponentRegex, hideOrUnhide, startHideOpponent, stopHideOpponent } from './hideOpponent';
 import isGameOver from './isGameOver';
 import { isOptionsOpen, openingExplorerId, openingExplorerRegex, renderOpeningExplorer } from './openingExplorer';
-
-let port: browser.Runtime.Port;
+import { initPort, port } from './port';
 
 const topPlayerCompObserver = new MutationObserver(async (mutationList) => {
   const topUserBlock = document.querySelector('.cc-user-block-component, .user-tagline-compact-theatre');
@@ -317,7 +316,7 @@ async function renewAnalyzeOnLichessBtns() {
 }
 
 function connect() {
-  port = browser.runtime.connect({ name: 'my-content-script-port' });
+  initPort();
 
   port.onDisconnect.addListener(() => {
     connect();

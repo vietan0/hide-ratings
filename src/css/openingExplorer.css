@@ -89,7 +89,7 @@
   line-height: 2.3rem;
 }
 
-#tabs > button {
+#tabs > .tab {
   border: none;
   padding: 0.5rem 1.5rem;
   background-color: var(--color-bg-subtler);
@@ -99,27 +99,49 @@
   cursor: pointer;
 }
 
-.dark-mode #tabs > button {
+.dark-mode #tabs > .tab {
   background-color: transparent;
 }
 
-#tabs > button:hover {
+#tabs > .tab:hover {
   color: var(--color-text-boldest);
 }
 
-.dark-mode #tabs > button:hover {
+.dark-mode #tabs > .tab:hover {
   background-color: var(--color-bg-subtlest);
 }
 
-#tabs > button.selected {
+#tabs > .tab.selected {
   color: var(--color-text-boldest);
   font-weight: 600;
   cursor: initial;
   background-color: transparent;
 }
 
-.dark-mode #tabs > button.selected {
+.dark-mode #tabs > .tab.selected {
   background-color: var(--color-bg-subtlest);
+}
+
+#header .headerLeft {
+  display: flex;
+}
+
+#refreshBtn {
+  background-color: transparent;
+  border: none;
+  padding: 0.4rem;
+  display: flex;
+  align-items: center;
+}
+
+#refreshBtn > svg {
+  width: 1.75rem;
+  height: 1.75rem;
+  color: var(--color-text-default);
+}
+
+#refreshBtn:hover {
+  background-color: var(--color-bg-subtler);
 }
 
 #optionsBtn {

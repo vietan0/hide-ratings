@@ -4,6 +4,7 @@ import browser from 'webextension-polyfill';
 import capitalize from './capitalize';
 import getFenFromUrl from './getFenFromUrl';
 import maxDepthReached from './maxDepthReached';
+import { port } from './port';
 import renderSvg from './renderSvg';
 import { ratings, timeControls } from './storageTypes';
 
@@ -67,76 +68,38 @@ export function isOptionsOpen() {
   return openingExplorer && openingExplorer!.dataset.isOptionsOpen === 'true';
 }
 
-async function renderHeader() {
-  async function renderTabs() {
-    const tabs = document.createElement('div');
-    tabs.id = 'tabs';
-    const { database } = await browser.storage.local.get() as ExtStorage;
+async function fetchLichess(url: string) {
+  if (!port.addedLichessListener) {
+    port.onMessage.addListener((message: any) => {
+      if (message.command === 'lichessResult') {
+        const { url, result } = message;
 
-    const btns = ['masters', 'lichess'].map((val) => {
-      const btn = document.createElement('button');
-      const selected = database === val;
-      if (selected)
-        btn.classList.add('selected');
+        if (result === 'Authorization Required') {
+          updateLiResAndInsertContent(undefined); // result itself should be undefined, or a more descriptive msg?
+        }
 
-      btn.onclick = async () => {
-        browser.storage.local.set({ database: val });
-        renderOpeningExplorer();
-      };
+        else {
+          cache.set(url, result);
 
-      btn.disabled = selected;
-      btn.textContent = capitalize(val);
-
-      return btn;
+          if (timeoutId) {
+            updateLiResAndInsertContent(result);
+          }
+          else {
+            // timeoutId is undefined when invoked -> called after the wait period ends -> trailing-edge confirmed
+            // Bug: when a streak of debounced calls ends in a position with a cached liRes (e.g. quickly ArrowLeft and ArrowRight before stopping on a visited position), but then the trailing-edge fetch changes liRes one last time, making liRes one/few moves ahead of the current board
+            // Solution: When it's a trailing-edge invocation, only change liRes if fen in url match fen on board, ignore if not.
+            if (getFenFromUrl(url) === fen) {
+              updateLiResAndInsertContent(result);
+            }
+          }
+        }
+      }
     });
 
-    tabs.append(...btns);
-
-    return tabs;
+    port.addedLichessListener = true;
   }
 
-  async function renderOptionsBtn() {
-    const optionsBtn = document.createElement('button');
-    optionsBtn.id = 'optionsBtn';
-    const cogIcon = await renderSvg('../icons/MdiCog.svg');
-    optionsBtn.append(cogIcon);
-
-    optionsBtn.onclick = async () => {
-      const openingExplorer = document.getElementById(openingExplorerId)!;
-      openingExplorer.dataset.isOptionsOpen = openingExplorer.dataset.isOptionsOpen === 'true' ? 'false' : 'true';
-      renderOpeningExplorer();
-    };
-
-    return optionsBtn;
-  }
-
-  const header = document.createElement('div');
-  header.id = headerId;
-  header.append(await renderTabs(), await renderOptionsBtn());
-
-  return header;
-}
-
-async function fetchLichess(url: string) {
-  const response = await fetch(url)
-    .then(r => r.json())
-    .catch(err => console.error('There has been an error fetching from Lichess', err)) as LiRes | undefined;
-
-  if (response) {
-    cache.set(url, response);
-  }
-
-  if (timeoutId) {
-    updateLiResAndInsertContent(response);
-  }
-  else {
-    // timeoutId is undefined when invoked -> called after the wait period ends -> trailing-edge confirmed
-    // Bug: when a streak of debounced calls ends in a position with a cached liRes (e.g. quickly ArrowLeft and ArrowRight before stopping on a visited position), but then the trailing-edge fetch changes liRes one last time, making liRes one/few moves ahead of the current board
-    // Solution: When it's a trailing-edge invocation, only change liRes if fen in url match fen on board, ignore if not.
-    if (getFenFromUrl(url) === fen) {
-      updateLiResAndInsertContent(response);
-    }
-  }
+  port.postMessage({ command: 'fetchLichess', url });
 }
 
 /**
@@ -159,32 +122,101 @@ function timeDebounced<T extends (...args: any) => any>(debouncedFn: T) {
 
 const timeDebouncedFetchLichess = timeDebounced(debounce(fetchLichess, wait, { edges: ['leading', 'trailing'] }));
 
-async function fetchOrCache() {
-  async function constructURL() {
-    const { database, databaseOptions } = await browser.storage.local.get() as ExtStorage;
-    let url = '';
+async function renderHeader() {
+  async function renderTabs() {
+    const tabs = document.createElement('div');
+    tabs.id = 'tabs';
+    const { database } = await browser.storage.local.get() as ExtStorage;
 
-    if (database === 'lichess') {
-      const speeds = databaseOptions.lichess.speeds.join(',');
-      const ratings = databaseOptions.lichess.ratings.join(',');
-      const since = databaseOptions.lichess.since ? `&since=${databaseOptions.lichess.since}` : '';
-      const until = databaseOptions.lichess.until ? `&until=${databaseOptions.lichess.until}` : '';
-      url = `https://explorer.lichess.ovh/lichess?variant=standard&fen=${encodeURIComponent(fen)}&speeds=${speeds}&ratings=${ratings}&topGames=0&recentGames=0${since}${until}`;
-    }
-    else {
-      const since = databaseOptions.masters.since ? `&since=${databaseOptions.masters.since}` : '';
-      const until = databaseOptions.masters.until ? `&until=${databaseOptions.masters.until}` : '';
-      url = `https://explorer.lichess.ovh/masters?fen=${encodeURIComponent(fen)}&topGames=0${since}${until}`;
-    }
+    const btns = ['masters', 'lichess'].map((val) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab';
+      const selected = database === val;
+      if (selected)
+        btn.classList.add('selected');
 
-    return url;
+      btn.onclick = async () => {
+        browser.storage.local.set({ database: val });
+        renderOpeningExplorer();
+      };
+
+      btn.disabled = selected;
+      btn.textContent = capitalize(val);
+
+      return btn;
+    });
+
+    tabs.append(...btns);
+
+    return tabs;
   }
 
+  async function renderRefreshBtn() {
+    const refreshBtn = document.createElement('button');
+    refreshBtn.id = 'refreshBtn';
+    const refreshIcon = await renderSvg('../icons/MdiRefresh.svg');
+    refreshBtn.append(refreshIcon);
+
+    refreshBtn.onclick = async () => {
+      const url = await constructURL();
+      await timeDebouncedFetchLichess(url);
+    };
+
+    return refreshBtn;
+  }
+
+  async function renderOptionsBtn() {
+    const optionsBtn = document.createElement('button');
+    optionsBtn.id = 'optionsBtn';
+    const cogIcon = await renderSvg('../icons/MdiCog.svg');
+    optionsBtn.append(cogIcon);
+
+    optionsBtn.onclick = async () => {
+      const openingExplorer = document.getElementById(openingExplorerId)!;
+      openingExplorer.dataset.isOptionsOpen = openingExplorer.dataset.isOptionsOpen === 'true' ? 'false' : 'true';
+      renderOpeningExplorer();
+    };
+
+    return optionsBtn;
+  }
+
+  const header = document.createElement('div');
+  header.id = headerId;
+
+  const headerLeft = document.createElement('div');
+  headerLeft.className = 'headerLeft';
+  headerLeft.append(await renderTabs(), await renderRefreshBtn());
+  header.append(headerLeft, await renderOptionsBtn());
+
+  return header;
+}
+
+async function constructURL() {
+  const { database, databaseOptions } = await browser.storage.local.get() as ExtStorage;
+  let url = '';
+
+  if (database === 'lichess') {
+    const speeds = databaseOptions.lichess.speeds.join(',');
+    const ratings = databaseOptions.lichess.ratings.join(',');
+    const since = databaseOptions.lichess.since ? `&since=${databaseOptions.lichess.since}` : '';
+    const until = databaseOptions.lichess.until ? `&until=${databaseOptions.lichess.until}` : '';
+    url = `https://explorer.lichess.org/lichess?variant=standard&fen=${encodeURIComponent(fen)}&speeds=${speeds}&ratings=${ratings}&topGames=0&recentGames=0${since}${until}`;
+  }
+  else {
+    const since = databaseOptions.masters.since ? `&since=${databaseOptions.masters.since}` : '';
+    const until = databaseOptions.masters.until ? `&until=${databaseOptions.masters.until}` : '';
+    url = `https://explorer.lichess.org/masters?fen=${encodeURIComponent(fen)}&topGames=0${since}${until}`;
+  }
+
+  return url;
+}
+
+async function fetchOrCache() {
   const url = await constructURL();
   const liResInCache = cache.get(url);
 
   if (liResInCache) {
-    updateLiResAndInsertContent(liResInCache);
+    await updateLiResAndInsertContent(liResInCache);
     removeOverlay();
   }
   else {
@@ -211,8 +243,8 @@ async function updateFen() {
   }
 }
 
-function updateLiResAndInsertContent(response: typeof liRes) {
-  function renderContent() {
+async function updateLiResAndInsertContent(response: typeof liRes) {
+  async function renderContent() {
     function renderTable(res: LiRes) {
       function renderMoveRow(move: Move, total: number, isTotalRow = false) {
         function renderPercentageBar(white: number, draws: number, black: number) {
@@ -343,6 +375,30 @@ function updateLiResAndInsertContent(response: typeof liRes) {
       return p;
     }
 
+    async function renderUnauthorizedMsg() {
+      const p = document.createElement('p');
+      p.style = 'display: flex; gap: 0.25rem; justify-content: center; align-items: center';
+      const infoIcon = await renderSvg('../icons/MdiAlertCircleOutline.svg');
+      infoIcon.style = 'width: 1.5rem; height: 1.5rem;';
+      const span = document.createElement('span');
+      span.textContent = 'Requires being logged in to Lichess.';
+      const a = document.createElement('a');
+      a.style = 'text-decoration: underline; display: inline-flex; gap: 0.25rem; align-items: center';
+      a.href = 'https://lichess.org/login';
+      a.target = '_blank';
+
+      const logInSpan = document.createElement('span');
+      logInSpan.textContent = 'Log in';
+      const launchIcon = await renderSvg('../icons/MdiLaunch.svg');
+      launchIcon.style = 'width: 1.5rem; height: 1.5rem;';
+      launchIcon.classList.add('w-3', 'h-auto', 'inline-block', 'object-contain');
+      a.append(logInSpan, launchIcon);
+
+      p.append(infoIcon, span, a);
+
+      return p;
+    }
+
     const content = document.createElement('div');
     content.id = contentId;
 
@@ -356,12 +412,17 @@ function updateLiResAndInsertContent(response: typeof liRes) {
       content.append(maxDepthReached);
     }
 
+    else if (liRes === undefined) {
+      const unauthorizedMsg = await renderUnauthorizedMsg();
+      content.append(unauthorizedMsg);
+    }
+
     return content;
   }
 
   liRes = response;
   const prevView = document.querySelector(`#${contentId}, #${optionsId}`);
-  const content = renderContent();
+  const content = await renderContent();
 
   if (!prevView) {
     // first render
@@ -370,7 +431,7 @@ function updateLiResAndInsertContent(response: typeof liRes) {
   }
   else {
     /* Explicitly remove all arrows on content re-render,
-    since moveRow's mouseleave won't fire if moveRow is removed from DOM. */
+    since moveRow's mouseleave can't fire if moveRow is removed from DOM. */
     document.dispatchEvent(new CustomEvent('removeAllArrows'));
     prevView.insertAdjacentElement('beforebegin', content);
     prevView.remove();
