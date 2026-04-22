@@ -46,6 +46,21 @@ async function renderBtns() {
     btn.append(switchIcon);
     btn.onclick = handleClick;
     document.getElementsByTagName('main').item(0)!.append(btn);
+
+    if (id === 'openingExplorer') {
+      const warningSpan = document.createElement('span');
+      warningSpan.classList = 'flex gap-1 items-center mt-1';
+
+      const warningIcon = await renderSvg('../icons/MdiAlertCircleOutline.svg');
+      warningIcon.classList = 'max-w-4 max-h-4 text-cyan-200';
+
+      const warningText = document.createElement('span');
+      warningText.className = 'text-xs text-cyan-200';
+      warningText.textContent = 'Requires being logged in to Lichess';
+
+      warningSpan.append(warningIcon, warningText);
+      infoDiv.append(warningSpan);
+    }
   }
 }
 
