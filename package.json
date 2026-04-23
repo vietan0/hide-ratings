@@ -1,6 +1,6 @@
 {
   "type": "module",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "scripts": {
     "build": "rolldown -c",
     "build:firefox": "rm -rf dist/firefox && pnpm build --environment BROWSER:firefox",
