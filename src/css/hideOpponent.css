@@ -2,7 +2,7 @@
   display: none;
 }
 
-.player-component.player-top .player-tagline .cc-user-block-component > :not(.connection-component) {
+.player-component.player-top .player-tagline .cc-user-block-component > :not(.connection-component):not(#Unknown) {
   display: none;
 }
 

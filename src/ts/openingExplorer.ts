@@ -153,8 +153,14 @@ async function renderHeader() {
     const refreshBtn = html('button', {
       id: 'refreshBtn',
       onclick: async () => {
-        const url = await constructURL();
-        await timeDebouncedFetchLichess(url);
+        if (maxDepthReached(fen)) {
+          updateLiResAndInsertContent(null);
+        }
+        else {
+          const url = await constructURL();
+          await timeDebouncedFetchLichess(url);
+        }
+
         const openingExplorer = document.getElementById(openingExplorerId)!;
         openingExplorer.dataset.isOptionsOpen = 'false';
       },

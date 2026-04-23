@@ -112,9 +112,13 @@ function createAnalyzeOnLichessBtn(
   else {
     btn = html('a', {
       className,
-      textContent: 'Analyze on Lichess',
       onclick: handleClick,
-    });
+    }, [
+      html('span', {
+        className: 'cc-button-one-line',
+        textContent: 'Analyze on Lichess',
+      }),
+    ]);
 
     btn.style = `
       --cc-bg-color: linear-gradient(
