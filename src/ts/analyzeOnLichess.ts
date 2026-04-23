@@ -1,4 +1,5 @@
 import browser from 'webextension-polyfill';
+import html from './html';
 
 export const analyzeOnLichessClass = 'analyzeOnLichess';
 
@@ -7,20 +8,36 @@ function isFocusMode() {
 }
 
 /**
+ * `options.variant`: `'default'` in sidebar | `'small'` in game over modal | `'icon'` in sidebar bottom
+ * `options.className`: class from a sibling button to copy from
  * @returns A button that sends the game to Lichess analysis page
  */
-function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default' | 'small' | 'icon' = 'default') {
-  let btn: HTMLAnchorElement | HTMLButtonElement;
+function createAnalyzeOnLichessBtn(
+  port: browser.Runtime.Port,
+  options: {
+    variant?: 'default' | 'small' | 'icon';
+    className: string;
+  },
+) {
+  let btn: HTMLElement;
+
+  const defaultOptions = {
+    variant: 'default',
+  };
+
+  const finalOptions = { ...defaultOptions, ...options };
+  const { variant, className } = finalOptions;
 
   function handleClick() {
     let fromFocusMode = false;
+
     if (isFocusMode()) {
       // get out of focus mode
       fromFocusMode = true;
       const focusModeToggleBtn = document.getElementById('board-controls-focus')!;
       focusModeToggleBtn.click();
     }
-    
+
     const timeout = 4000;
     const delay = 100;
     const startFindingShareBtn = Date.now();
@@ -65,7 +82,7 @@ function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default
           }
         }, delay);
       }
-      
+
       if (Date.now() - startFindingShareBtn > timeout) {
         clearInterval(shareBtnInterval);
         console.error(`Unable to find shareBtn after ${timeout / 1000} seconds`);
@@ -74,33 +91,31 @@ function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default
   }
 
   if (variant === 'icon') {
-    btn = document.createElement('button');
-    btn.ariaLabel = 'Analyze on Lichess';
-
-    btn.style = `
-            border: none;
-            background-color: transparent;
-            opacity: 0.5;
-          `;
-
-    btn.addEventListener('mouseover', () => {
-      btn.style.opacity = '0.82'; // sibling btns are 0.72, but this one is thinner so make it more opaque to compensate
-    });
-
-    btn.addEventListener('mouseout', () => {
-      btn.style.opacity = '0.5';
-    });
-
-    const icon = document.createElement('img');
-    icon.src = browser.runtime.getURL('../icons/SimpleIconsLichess.svg');
-    icon.style = 'width: 20px';
-    btn.append(icon);
+    btn = html('button', {
+      ariaLabel: 'Analyze on Lichess',
+      title: 'Analyze on Lichess',
+      className,
+      style: { opacity: '0.5' },
+      onmouseover: () => {
+        btn.style.opacity = '0.82'; // sibling btns are 0.72, but this icon is thinner so make it more opaque to compensate
+      },
+      onmouseout: () => {
+        btn.style.opacity = '0.5';
+      },
+    }, [
+      html('img', {
+        src: browser.runtime.getURL('../icons/SimpleIconsLichess.svg'),
+        style: { width: '20px' },
+      }),
+    ]);
   }
   else {
-    btn = document.createElement('a');
-    btn.className = 'cc-button-component cc-button-primary cc-button-xx-large cc-bg-primary';
-    btn.textContent = 'Analyze on Lichess';
-    
+    btn = html('a', {
+      className,
+      textContent: 'Analyze on Lichess',
+      onclick: handleClick,
+    });
+
     btn.style = `
       --cc-bg-color: linear-gradient(
         180deg,
@@ -141,47 +156,54 @@ function createAnalyzeOnLichessBtn(port: browser.Runtime.Port, variant: 'default
     `;
 
     if (variant === 'default') {
-      const icon = document.createElement('img');
-      icon.src = browser.runtime.getURL('../icons/SimpleIconsLichess.svg');
-      icon.style = 'width: 24px';
-      btn.prepend(icon);
+      const icon = html('img', {
+        src: browser.runtime.getURL('../icons/SimpleIconsLichess.svg'),
+        style: { width: '24px' },
+      });
 
-      if (isFocusMode()) {
-        btn.classList.add('game-over-review-button-game-over-review-button');
-      }
+      btn.prepend(icon);
     }
     else {
       // variant === 'small'
-      btn.classList.add('game-over-review-button-game-over-review-button');
+      btn.classList.add('game-over-primary-cta-game-over-primary-cta');
     }
   }
 
-  btn.onclick = handleClick;
   btn.classList.add(analyzeOnLichessClass);
 
   return btn;
 }
 
 export function addBtnToPlaces(port: browser.Runtime.Port) {
-  const gameOverModalBtns = document.querySelector('.game-over-modal-buttons');
-  const gameReviewBtnSidebar = document.querySelector('.sidebar-component .game-review-buttons-component');
-  const focusModeSidebarBottom = document.querySelector('.focus-mode-sidebar-bottom');
+  const gameReviewBtnGameOverModal = document.querySelector('.game-over-modal-shell-buttons > [aria-label=\'Game Review\']');
+  const gameReviewBtnSidebar = document.querySelector('.sidebar-component .game-review-buttons-component > [aria-label=\'Game Review\']');
+  const gameReviewBtnFocusModeSidebar = document.querySelector('.focus-mode-sidebar-bottom .game-review-buttons-component > [aria-label=\'Game Review\']');
   const liveGameAnalysisBtn = document.querySelector('.live-game-buttons-component > [aria-label="Self Analysis"],.game-icons-container-component > [aria-label="Self Analysis"]');
 
-  if (gameOverModalBtns && !gameOverModalBtns.querySelector(`.${analyzeOnLichessClass}`)) {
-    gameOverModalBtns.prepend(createAnalyzeOnLichessBtn(port, 'small'));
+  if (gameReviewBtnGameOverModal && !gameReviewBtnGameOverModal.parentElement!.querySelector(`.${analyzeOnLichessClass}`)) {
+    gameReviewBtnGameOverModal.insertAdjacentElement('beforebegin', createAnalyzeOnLichessBtn(port, {
+      variant: 'small',
+      className: gameReviewBtnGameOverModal.className,
+    }));
   }
 
   if (gameReviewBtnSidebar && !gameReviewBtnSidebar.parentElement!.querySelector(`.${analyzeOnLichessClass}`)) {
-    gameReviewBtnSidebar.insertAdjacentElement('afterbegin', createAnalyzeOnLichessBtn(port));
+    gameReviewBtnSidebar.insertAdjacentElement('beforebegin', createAnalyzeOnLichessBtn(port, {
+      className: gameReviewBtnSidebar.className,
+    }));
   }
 
-  if (focusModeSidebarBottom && !focusModeSidebarBottom.querySelector(`.${analyzeOnLichessClass}`)) {
-    focusModeSidebarBottom.prepend(createAnalyzeOnLichessBtn(port));
+  if (gameReviewBtnFocusModeSidebar && !gameReviewBtnFocusModeSidebar.parentElement!.querySelector(`.${analyzeOnLichessClass}`)) {
+    gameReviewBtnFocusModeSidebar.insertAdjacentElement('beforebegin', createAnalyzeOnLichessBtn(port, {
+      className: gameReviewBtnFocusModeSidebar.className,
+    }));
   }
 
   if (liveGameAnalysisBtn && !liveGameAnalysisBtn.parentElement!.querySelector(`.${analyzeOnLichessClass}`)) {
-    liveGameAnalysisBtn.insertAdjacentElement('afterend', createAnalyzeOnLichessBtn(port, 'icon'));
+    liveGameAnalysisBtn.insertAdjacentElement('afterend', createAnalyzeOnLichessBtn(port, {
+      variant: 'icon',
+      className: liveGameAnalysisBtn.className,
+    }));
   }
 }
 

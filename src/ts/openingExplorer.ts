@@ -3,10 +3,11 @@ import { debounce } from 'es-toolkit';
 import browser from 'webextension-polyfill';
 import capitalize from './capitalize';
 import getFenFromUrl from './getFenFromUrl';
+import html from './html';
 import maxDepthReached from './maxDepthReached';
 import { port } from './port';
-import renderSvg from './renderSvg';
 import { ratings, timeControls } from './storageTypes';
+import svg from './svg';
 
 type Opening = {
   eco: string;
@@ -47,8 +48,7 @@ const wait = 400;
 let timeoutId: NodeJS.Timeout | undefined;
 
 function addOverlay() {
-  const overlay = document.createElement('div');
-  overlay.className = overlayClass;
+  const overlay = html('div', { className: overlayClass });
   const openingExplorer = document.getElementById(openingExplorerId);
 
   if (openingExplorer && document.getElementsByClassName(overlayClass).length === 0) {
@@ -124,24 +124,22 @@ const timeDebouncedFetchLichess = timeDebounced(debounce(fetchLichess, wait, { e
 
 async function renderHeader() {
   async function renderTabs() {
-    const tabs = document.createElement('div');
-    tabs.id = 'tabs';
+    const tabs = html('div', { id: 'tabs' });
     const { database } = await browser.storage.local.get() as ExtStorage;
 
     const btns = ['masters', 'lichess'].map((val) => {
-      const btn = document.createElement('button');
-      btn.className = 'tab';
       const selected = database === val;
-      if (selected)
-        btn.classList.add('selected');
 
-      btn.onclick = async () => {
-        browser.storage.local.set({ database: val });
-        renderOpeningExplorer();
-      };
+      const btn = html('button', {
+        className: `tab ${selected ? 'selected' : ''}`,
+        textContent: capitalize(val),
+        onclick: async () => {
+          browser.storage.local.set({ database: val });
+          renderOpeningExplorer();
+        },
+      }) as HTMLButtonElement;
 
       btn.disabled = selected;
-      btn.textContent = capitalize(val);
 
       return btn;
     });
@@ -152,41 +150,45 @@ async function renderHeader() {
   }
 
   async function renderRefreshBtn() {
-    const refreshBtn = document.createElement('button');
-    refreshBtn.id = 'refreshBtn';
-    const refreshIcon = await renderSvg('../icons/MdiRefresh.svg');
-    refreshBtn.append(refreshIcon);
-
-    refreshBtn.onclick = async () => {
-      const url = await constructURL();
-      await timeDebouncedFetchLichess(url);
-    };
+    const refreshBtn = html('button', {
+      id: 'refreshBtn',
+      onclick: async () => {
+        const url = await constructURL();
+        await timeDebouncedFetchLichess(url);
+        const openingExplorer = document.getElementById(openingExplorerId)!;
+        openingExplorer.dataset.isOptionsOpen = 'false';
+      },
+    }, [await svg('../icons/MdiRefresh.svg')]);
 
     return refreshBtn;
   }
 
   async function renderOptionsBtn() {
-    const optionsBtn = document.createElement('button');
-    optionsBtn.id = 'optionsBtn';
-    const cogIcon = await renderSvg('../icons/MdiCog.svg');
-    optionsBtn.append(cogIcon);
-
-    optionsBtn.onclick = async () => {
-      const openingExplorer = document.getElementById(openingExplorerId)!;
-      openingExplorer.dataset.isOptionsOpen = openingExplorer.dataset.isOptionsOpen === 'true' ? 'false' : 'true';
-      renderOpeningExplorer();
-    };
+    const optionsBtn = html('button', {
+      id: 'optionsBtn',
+      onclick: async () => {
+        const openingExplorer = document.getElementById(openingExplorerId)!;
+        openingExplorer.dataset.isOptionsOpen = openingExplorer.dataset.isOptionsOpen === 'true' ? 'false' : 'true';
+        renderOpeningExplorer();
+      },
+    }, [
+      await svg('../icons/MdiCog.svg'),
+    ]);
 
     return optionsBtn;
   }
 
-  const header = document.createElement('div');
-  header.id = headerId;
-
-  const headerLeft = document.createElement('div');
-  headerLeft.className = 'headerLeft';
-  headerLeft.append(await renderTabs(), await renderRefreshBtn());
-  header.append(headerLeft, await renderOptionsBtn());
+  const header = html('div', {
+    id: headerId,
+  }, [
+    html('div', {
+      className: 'headerLeft',
+    }, [
+      await renderTabs(),
+      await renderRefreshBtn(),
+    ]),
+    await renderOptionsBtn(),
+  ]);
 
   return header;
 }
@@ -261,15 +263,11 @@ async function updateLiResAndInsertContent(response: typeof liRes) {
           const wp = Math.round(white * 100 / total);
           const bp = Math.round(black * 100 / total);
           const dp = 100 - wp - bp;
-          const cell = document.createElement('td');
-          const percentageBar = document.createElement('div');
-          const whiteBar = document.createElement('span');
-          const drawBar = document.createElement('span');
-          const blackBar = document.createElement('span');
-
-          whiteBar.textContent = renderPercentageText(wp);
-          drawBar.textContent = renderPercentageText(dp);
-          blackBar.textContent = renderPercentageText(bp);
+          const cell = html('td');
+          const percentageBar = html('div');
+          const whiteBar = html('span', { textContent: renderPercentageText(wp) });
+          const drawBar = html('span', { textContent: renderPercentageText(dp) });
+          const blackBar = html('span', { textContent: renderPercentageText(bp) });
 
           whiteBar.style = /* style */`
             padding-inline-start: ${wp >= 10 && wp !== 100 ? '0.5rem' : '0'};
@@ -300,35 +298,19 @@ async function updateLiResAndInsertContent(response: typeof liRes) {
           return cell;
         }
 
-        const moveRow = document.createElement('tr');
-
-        if (isTotalRow) {
-          moveRow.classList.add('totalRow');
-        }
-        else {
-          moveRow.onclick = async () => {
-            document.dispatchEvent(new CustomEvent('sendUci', { detail: move.uci }));
-          };
-
-          moveRow.onmouseenter = () => {
-            document.dispatchEvent(new CustomEvent('addArrow', { detail: move.uci }));
-          };
-
-          moveRow.onmouseleave = () => {
-            document.dispatchEvent(new CustomEvent('removeArrow', { detail: move.uci }));
-          };
-        }
+        const moveRow = html('tr', isTotalRow
+          ? { className: 'totalRow' }
+          : {
+              onclick: () => document.dispatchEvent(new CustomEvent('sendUci', { detail: move.uci })),
+              onmouseenter: () => document.dispatchEvent(new CustomEvent('addArrow', { detail: move.uci })),
+              onmouseleave: () => document.dispatchEvent(new CustomEvent('removeArrow', { detail: move.uci })),
+            });
 
         const moveTotal = move.white + move.draws + move.black;
-        const sanCell = document.createElement('td');
-        sanCell.textContent = move.san;
-
-        const percCell = document.createElement('td');
         const perc = Math.round(moveTotal * 100 / total);
-        percCell.textContent = `${perc}%`;
-
-        const moveTotalCell = document.createElement('td');
-        moveTotalCell.textContent = new Intl.NumberFormat().format(moveTotal);
+        const sanCell = html('td', { textContent: move.san });
+        const percCell = html('td', { textContent: `${perc}%` });
+        const moveTotalCell = html('td', { textContent: new Intl.NumberFormat().format(moveTotal) });
 
         moveRow.append(sanCell, percCell, moveTotalCell);
         moveRow.append(renderPercentageBar(move.white, move.draws, move.black));
@@ -336,8 +318,8 @@ async function updateLiResAndInsertContent(response: typeof liRes) {
         return moveRow;
       }
 
-      const table = document.createElement('table');
-      const tbody = document.createElement('tbody');
+      const table = html('table');
+      const tbody = html('tbody');
       const total = res.white + res.draws + res.black;
       const moveRows = res.moves.map(move => renderMoveRow(move, total));
       table.append(tbody);
@@ -362,45 +344,43 @@ async function updateLiResAndInsertContent(response: typeof liRes) {
     }
 
     function renderNoGameFound() {
-      const p = document.createElement('p');
-      p.textContent = 'No game found';
-
-      return p;
+      return html('p', { textContent: 'No game found' });
     }
 
     function renderMaxDepthReached() {
-      const p = document.createElement('p');
-      p.textContent = 'Max depth reached!';
-
-      return p;
+      return html('p', { textContent: 'Max depth reached!' });
     }
 
     async function renderUnauthorizedMsg() {
-      const p = document.createElement('p');
-      p.style = 'display: flex; gap: 0.25rem; justify-content: center; align-items: center';
-      const infoIcon = await renderSvg('../icons/MdiAlertCircleOutline.svg');
-      infoIcon.style = 'width: 1.5rem; height: 1.5rem;';
-      const span = document.createElement('span');
-      span.textContent = 'Requires being logged in to Lichess.';
-      const a = document.createElement('a');
-      a.style = 'text-decoration: underline; display: inline-flex; gap: 0.25rem; align-items: center';
-      a.href = 'https://lichess.org/login';
-      a.target = '_blank';
-
-      const logInSpan = document.createElement('span');
-      logInSpan.textContent = 'Log in';
-      const launchIcon = await renderSvg('../icons/MdiLaunch.svg');
-      launchIcon.style = 'width: 1.5rem; height: 1.5rem;';
-      launchIcon.classList.add('w-3', 'h-auto', 'inline-block', 'object-contain');
-      a.append(logInSpan, launchIcon);
-
-      p.append(infoIcon, span, a);
+      const p = html('p', {
+        style: {
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: '0.5rem',
+        },
+      }, [
+        await svg('../icons/MdiAlertCircleOutline.svg', {
+          style: { width: '1.5rem', height: '1.5rem' },
+        }),
+        html('span', { textContent: 'Requires being logged in to Lichess.' }),
+        html('a', {
+          style: 'text-decoration: underline; display: inline-flex; gap: 0.25rem; align-items: center',
+          href: 'https://lichess.org/login',
+          target: '_blank',
+        }, [
+          html('span', { textContent: 'Log in' }),
+          await svg('../icons/MdiLaunch.svg', {
+            className: 'w-3 h-auto inline-block object-contain',
+            style: { width: '1.5rem', height: '1.5rem' },
+          }),
+        ]),
+      ]);
 
       return p;
     }
 
-    const content = document.createElement('div');
-    content.id = contentId;
+    const content = html('div', { id: contentId });
 
     if (liRes) {
       const noGameFound = liRes.white === 0 && liRes.black === 0 && liRes.draws === 0;
@@ -499,20 +479,14 @@ async function renderOptions() {
   async function renderTimeControlBtn(timeControl: TimeControl) {
     const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
     const currentSelected = databaseOptions.lichess.speeds.includes(timeControl);
-    const btn = document.createElement('button');
-    btn.className = 'timeControl';
-    if (currentSelected)
-      btn.classList.add('selected');
-    btn.type = 'button';
-    btn.ariaLabel = timeControl;
-    btn.title = capitalize(timeControl);
 
-    const timeControlIcon = await renderSvg(`../icons/timeControl/${timeControl}.svg`);
-    btn.append(timeControlIcon);
-
-    btn.onclick = () => {
-      btn.classList.toggle('selected');
-    };
+    const btn = html('button', {
+      className: `timeControl ${currentSelected ? 'selected' : ''}`,
+      type: 'button',
+      ariaLabel: timeControl,
+      title: capitalize(timeControl),
+      onclick: () => { btn.classList.toggle('selected'); },
+    }, [await svg(`../icons/timeControl/${timeControl}.svg`)]);
 
     return btn;
   }
@@ -520,29 +494,26 @@ async function renderOptions() {
   async function renderRatingBtn(rating: Rating) {
     const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
     const currentSelected = databaseOptions.lichess.ratings.includes(rating);
-    const btn = document.createElement('button');
-    btn.className = 'rating';
-    if (currentSelected)
-      btn.classList.add('selected');
-    btn.type = 'button';
 
-    btn.textContent = String(rating);
-
-    btn.onclick = () => {
-      btn.classList.toggle('selected');
-    };
+    const btn = html('button', {
+      className: `rating ${currentSelected ? 'selected' : ''}`,
+      type: 'button',
+      textContent: String(rating),
+      onclick: () => btn.classList.toggle('selected'),
+    });
 
     return btn;
   }
 
   const { database } = await browser.storage.local.get() as ExtStorage;
-  const options = document.createElement('div');
-  options.id = optionsId;
-  const form = document.createElement('form');
-  const submit = document.createElement('button');
-  submit.type = 'submit';
-  submit.className = 'cc-button-component cc-button-primary cc-button-medium cc-bg-primary analysis-view-button';
-  submit.textContent = 'Save';
+  const options = html('div', { id: optionsId });
+  const form = html('form');
+
+  const submit = html('button', {
+    type: 'submit',
+    className: 'cc-button-component cc-button-primary cc-button-medium cc-bg-primary analysis-view-button',
+    textContent: 'Save',
+  });
 
   /*
     - gather info from inputs into an object
@@ -558,63 +529,58 @@ async function renderOptions() {
   if (database === 'lichess') {
     const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
     // time control (must be in order)
-    const timeControlWrapper = document.createElement('div');
-    const p = document.createElement('p');
-    p.className = 'label';
-    p.textContent = 'Time control';
-    const timeControlBtnsContainer = document.createElement('div');
     const timeControlBtns = await Promise.all(timeControls.map(tc => renderTimeControlBtn(tc)));
-    timeControlBtnsContainer.append(...timeControlBtns);
-    timeControlWrapper.append(p, timeControlBtnsContainer);
+
+    const timeControlWrapper = html('div', {}, [
+      html('p', { className: 'label', textContent: 'Time control' }),
+      html('div', {}, timeControlBtns),
+    ]);
+
     form.append(timeControlWrapper);
 
     // rating
-    const ratingWrapper = document.createElement('div');
-    const p2 = document.createElement('p');
-    p2.className = 'label';
-    p2.textContent = 'Rating';
-    const ratingBtnsContainer = document.createElement('div');
     const ratingBtns = await Promise.all(ratings.map(r => renderRatingBtn(r)));
-    ratingBtnsContainer.append(...ratingBtns);
-    ratingWrapper.append(p2, ratingBtnsContainer);
+
+    const ratingWrapper = html('div', {}, [
+      html('p', { className: 'label', textContent: 'Rating' }),
+      html('div', {}, ratingBtns),
+    ]);
+
     form.append(ratingWrapper);
 
     // since
-    const sinceUntil = document.createElement('div');
-    sinceUntil.id = 'sinceUntil';
-    const sinceWrapper = document.createElement('div');
-    const sinceLabel = document.createElement('p');
-    sinceLabel.className = 'label';
-    sinceLabel.textContent = 'Since';
-    const sinceInput = document.createElement('input');
-    sinceInput.name = 'since';
-    sinceInput.title = 'Insert year and month in YYYY-MM format starting from 1952-01';
-    sinceInput.placeholder = 'YYYY-MM';
-    sinceInput.value = databaseOptions.lichess.since || '';
+    const sinceUntil = html('div', { id: 'sinceUntil' });
+    const sinceWrapper = html('div');
+    const sinceLabel = html('p', { className: 'label', textContent: 'Since' });
 
-    sinceInput.oninput = () => {
-      const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
-      const untilInput = form.querySelector('input[name=\'until\']')! as HTMLInputElement;
-      submitBtn.disabled = !validateYearMonth(sinceInput.value) || !validateYearMonth(untilInput.value);
-    };
+    const sinceInput = html('input', {
+      name: 'since',
+      title: 'Insert year and month in YYYY-MM format starting from 1952-01',
+      placeholder: 'YYYY-MM',
+      value: databaseOptions.lichess.since || '',
+      oninput: () => {
+        const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
+        const untilInput = form.querySelector('input[name=\'until\']')! as HTMLInputElement;
+        submitBtn.disabled = !validateYearMonth(sinceInput.value) || !validateYearMonth(untilInput.value);
+      },
+    }) as HTMLInputElement;
 
     sinceWrapper.append(sinceLabel, sinceInput);
 
     // until
-    const untilWrapper = document.createElement('div');
-    const untilLabel = document.createElement('p');
-    untilLabel.className = 'label';
-    untilLabel.textContent = 'Until';
-    const untilInput = document.createElement('input');
-    untilInput.name = 'until';
-    untilInput.title = 'Insert year and month in YYYY-MM format starting from 1952-01';
-    untilInput.placeholder = 'YYYY-MM';
-    untilInput.value = databaseOptions.lichess.until || '';
+    const untilWrapper = html('div');
+    const untilLabel = html('p', { className: 'label', textContent: 'Until' });
 
-    untilInput.oninput = () => {
-      const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
-      submitBtn.disabled = !validateYearMonth(sinceInput.value) || !validateYearMonth(untilInput.value);
-    };
+    const untilInput = html('input', {
+      name: 'until',
+      title: 'Insert year and month in YYYY-MM format starting from 1952-01',
+      placeholder: 'YYYY-MM',
+      value: databaseOptions.lichess.until || '',
+      oninput: () => {
+        const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
+        submitBtn.disabled = !validateYearMonth(sinceInput.value) || !validateYearMonth(untilInput.value);
+      },
+    }) as HTMLInputElement;
 
     untilWrapper.append(untilLabel, untilInput);
 
@@ -665,41 +631,38 @@ async function renderOptions() {
   else {
     const { databaseOptions } = await browser.storage.local.get() as ExtStorage;
     // since
-    const sinceUntil = document.createElement('div');
-    sinceUntil.id = 'sinceUntil';
-    const sinceWrapper = document.createElement('div');
-    const sinceLabel = document.createElement('p');
-    sinceLabel.className = 'label';
-    sinceLabel.textContent = 'Since';
-    const sinceInput = document.createElement('input');
-    sinceInput.name = 'since';
-    sinceInput.title = 'Insert year in YYYY format starting from 1952';
-    sinceInput.placeholder = 'YYYY';
-    sinceInput.value = databaseOptions.masters.since ? String(databaseOptions.masters.since) : '';
+    const sinceUntil = html('div', { id: 'sinceUntil' });
+    const sinceWrapper = html('div');
+    const sinceLabel = html('p', { className: 'label', textContent: 'Since' });
 
-    sinceInput.oninput = () => {
-      const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
-      const untilInput = form.querySelector('input[name=\'until\']')! as HTMLInputElement;
-      submitBtn.disabled = !validateYear(sinceInput.value) || !validateYear(untilInput.value);
-    };
+    const sinceInput = html('input', {
+      name: 'since',
+      title: 'Insert year in YYYY format starting from 1952',
+      placeholder: 'YYYY',
+      value: databaseOptions.masters.since ? String(databaseOptions.masters.since) : '',
+      oninput: () => {
+        const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
+        const untilInput = form.querySelector('input[name=\'until\']')! as HTMLInputElement;
+        submitBtn.disabled = !validateYear(sinceInput.value) || !validateYear(untilInput.value);
+      },
+    }) as HTMLInputElement;
 
     sinceWrapper.append(sinceLabel, sinceInput);
 
     // until
-    const untilWrapper = document.createElement('div');
-    const untilLabel = document.createElement('p');
-    untilLabel.className = 'label';
-    untilLabel.textContent = 'Until';
-    const untilInput = document.createElement('input');
-    untilInput.name = 'until';
-    untilInput.title = 'Insert year in YYYY format starting from 1952';
-    untilInput.placeholder = 'YYYY';
-    untilInput.value = databaseOptions.masters.until ? String(databaseOptions.masters.until) : '';
+    const untilWrapper = html('div');
+    const untilLabel = html('p', { className: 'label', textContent: 'Until' });
 
-    untilInput.oninput = () => {
-      const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
-      submitBtn.disabled = !validateYear(sinceInput.value) || !validateYear(untilInput.value);
-    };
+    const untilInput = html('input', {
+      name: 'until',
+      title: 'Insert year in YYYY format starting from 1952',
+      placeholder: 'YYYY',
+      value: databaseOptions.masters.until ? String(databaseOptions.masters.until) : '',
+      oninput: () => {
+        const submitBtn = form.querySelector('button[type=\'submit\']')! as HTMLButtonElement;
+        submitBtn.disabled = !validateYear(sinceInput.value) || !validateYear(untilInput.value);
+      },
+    }) as HTMLInputElement;
 
     untilWrapper.append(untilLabel, untilInput);
     sinceUntil.append(sinceWrapper, untilWrapper);
@@ -786,24 +749,26 @@ export async function renderOpeningExplorer() {
   const mainWorldScriptInjected = document.body.querySelector('script[src$="mainWorldScript.js"]');
 
   if (!mainWorldScriptInjected) {
-    const mainWorldScript = document.createElement('script');
-    mainWorldScript.src = browser.runtime.getURL('js/mainWorldScript.js');
+    const mainWorldScript = html('script', {
+      src: browser.runtime.getURL('js/mainWorldScript.js'),
+    });
+
     document.body.append(mainWorldScript);
   }
 
   const parent = document.querySelector('.analysis-view-component')!;
-  const openingExplorer = document.createElement('div');
-  openingExplorer.id = openingExplorerId;
-  openingExplorer.dataset.isOptionsOpen = 'false';
+
+  const openingExplorer = html('div', {
+    id: openingExplorerId,
+    dataset: {
+      isOptionsOpen: 'false',
+    },
+  }, [
+    html('div', { id: loadingId }, [await svg('../icons/MdiLoading.svg')]),
+    await renderHeader(),
+  ]);
+
   parent.prepend(openingExplorer);
-
-  const loadingContainer = document.createElement('div');
-  loadingContainer.id = loadingId;
-  const loadingIcon = await renderSvg('../icons/MdiLoading.svg');
-  loadingContainer.append(loadingIcon);
-  openingExplorer.append(loadingContainer);
-
-  openingExplorer.append(await renderHeader());
   await updateFen();
 }
 

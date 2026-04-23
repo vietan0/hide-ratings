@@ -1,4 +1,5 @@
-import renderSvg from './renderSvg';
+import html from './html';
+import svg from './svg';
 
 const analysisLinkInArchiveClass = 'ccTweaks_analysisCell';
 const headerCellClass = 'ccTweaks_headerCell';
@@ -13,8 +14,7 @@ function addHeaderCell() {
     return;
   }
 
-  const ccTweaksHeaderCell = document.createElement('th');
-  ccTweaksHeaderCell.className = `${headerCellClass} table-text-center`;
+  const ccTweaksHeaderCell = html('th', { className: `${headerCellClass} table-text-center` });
   accuracyHeaderCell.insertAdjacentElement('afterend', ccTweaksHeaderCell);
 }
 
@@ -26,18 +26,15 @@ function addLinkCells() {
       return;
     }
 
-    const analysisCell = document.createElement('td');
-    analysisCell.className = `${analysisLinkInArchiveClass} table-text-center`;
-    const anchor = document.createElement('a');
     const archivedGameLink = cell.querySelector('a');
     const oriHref = archivedGameLink!.getAttribute('href')!;
-    // regex demonstration: https://regexr.com/8glks
-    const hrefToAnalysis = oriHref.replace(/^[\/\.\:-\w+]+\d+(?=\?\w+|$)/, "$&/analysis");
-    anchor.href = hrefToAnalysis;
+    // regex demonstration: https://regexr.com/8l4hh
+    const hrefToAnalysis = oriHref.replace(/^[/.:\-\w+]+(?=\?\w|$)/, '$&/analysis');
 
-    const analyzeIcon = await renderSvg('../icons/Analyze.svg');
-    anchor.append(analyzeIcon);
-    analysisCell.append(anchor);
+    const analysisCell = html('td', { className: `${analysisLinkInArchiveClass} table-text-center` }, [
+      html('a', { href: hrefToAnalysis }, [await svg('../icons/Analyze.svg')]),
+    ]);
+
     cell.insertAdjacentElement('afterend', analysisCell);
   }
 
