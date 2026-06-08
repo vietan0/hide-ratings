@@ -15,6 +15,13 @@
 .overview-footer-container /* grid in /stats/overview */,
 .rating-block-container /* /stats/live/<time-control> */,
 .sidebar-nav-item-value /* stat sidebar in /stats/live/<time-control> */,
-.game-item-rating /* Load From Archive in /analysis */ {
+.game-item-rating /* Load From Archive in /analysis */,
+.rating-score-rating /* when Game Over popup open */,
+[data-test-element='user-tagline-rating'] /* new archive page */,
+[data-cy='user-tagline-rating'],
+.all-stats-item-adv-rating /* new stat page */,
+.all-stats-item-rating,
+.type-header-rating,
+.overview-stats-item-rating /* new overview page */ {
   display: none !important;
 }
