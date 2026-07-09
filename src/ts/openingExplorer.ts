@@ -468,8 +468,7 @@ async function renderOptions() {
       // compare arrays
         if (prop1.length !== prop2.length
           || !prop1.every((val, i) => val === prop2[i])
-          || !prop2.every((val, i) => val === prop1[i])
-        ) {
+          || !prop2.every((val, i) => val === prop1[i])) {
           return false;
         }
       }

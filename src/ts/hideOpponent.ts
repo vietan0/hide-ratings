@@ -30,7 +30,7 @@ export function checkHideOpponentConds() {
   // 1. url condition
   // 2. username-related conditions
   // 3. game over-related conditions
-  if (!window.location.href.match(hideOpponentRegex))
+  if (!hideOpponentRegex.test(window.location.href))
     return { cond: false, reason: 'url' } as const;
 
   return usernameFail() || isGameOver() || { cond: true };

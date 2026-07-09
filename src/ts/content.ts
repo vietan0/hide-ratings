@@ -135,8 +135,7 @@ const sidebarObserver = new MutationObserver(async (mutationList) => {
 
   const analysisViewCompAdded = mutationList.some((mutation) => {
     if (mutation.addedNodes.length === 1
-      && mutation.addedNodes.item(0)!.nodeName === 'DIV'
-    ) {
+      && mutation.addedNodes.item(0)!.nodeName === 'DIV') {
       const addedDiv = mutation.addedNodes.item(0) as HTMLDivElement;
 
       if (addedDiv.classList.contains('analysis-view-component')) {
@@ -144,8 +143,7 @@ const sidebarObserver = new MutationObserver(async (mutationList) => {
       }
 
       if (addedDiv.classList.contains('sidebar-tab-content-component')
-        && Array.from(addedDiv.children).some(div => div.classList.contains('analysis-view-component'))
-      ) {
+        && Array.from(addedDiv.children).some(div => div.classList.contains('analysis-view-component'))) {
         return true;
       }
     }
@@ -164,13 +162,12 @@ const archiveObserver = new MutationObserver((mutationList) => {
       if (mutation.target.nodeType === 1) {
         const target = mutation.target as Element;
 
-        if (window.location.href.match(/chess.com\/member\/[\w-]+$/)) {
+        if (/chess.com\/member\/[\w-]+$/.test(window.location.href)) {
           if (target.classList.contains('archive-component')) {
             const firstAddedNode = mutation.addedNodes.item(0)!;
 
             if (firstAddedNode.nodeType === 1
-              && (firstAddedNode as HTMLElement).getAttribute('header-title')! === 'Game History'
-            ) {
+              && (firstAddedNode as HTMLElement).getAttribute('header-title')! === 'Game History') {
               // 1. visit /member/x
               addAnalysisLinks();
 
@@ -208,7 +205,7 @@ const archiveObserver = new MutationObserver((mutationList) => {
           return;
         }
 
-        else if (window.location.href.match(/chess.com\/games\/archive/)) {
+        else if (/chess.com\/games\/archive/.test(window.location.href)) {
           // https://www.chess.com/games/archive
           // should already get added by first page load
           archiveObserver.disconnect();

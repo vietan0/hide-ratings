@@ -1,5 +1,5 @@
 <p align="center">
-  <img width="96" height="96" src="src/icons/chesslogo.png">
+  <img width="96" height="96" src="src/icons/chesslogo.png" alt="Extension logo">
 </p>
 <h1 align="center">Chess.com Tweaks</h1>
 <p align="center">Chess.com Tweaks is a browser extension that enhances your chess experience with a cleaner interface and additional analysis tools.</p>

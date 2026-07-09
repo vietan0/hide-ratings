@@ -17,31 +17,24 @@
     "upload:chrome": "tsx upload-chrome.ts"
   },
   "dependencies": {
-    "adm-zip": "^0.5.16",
-    "chrome-webstore-upload-cli": "^3.3.2",
-    "dotenv": "^16.4.5",
-    "es-toolkit": "^1.39.10",
-    "glob": "^11.0.3"
+    "adm-zip": "^0.5.18",
+    "chrome-webstore-upload-cli": "^4.0.1",
+    "dotenv": "^17.4.2",
+    "es-toolkit": "^1.49.0",
+    "glob": "^13.0.6"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "^5.2.2",
-    "@types/adm-zip": "^0.5.7",
-    "@types/webextension-polyfill": "^0.12.3",
-    "eslint": "^9.34.0",
-    "eslint-plugin-format": "^1.0.1",
-    "rolldown": "1.0.0-rc.17",
+    "@antfu/eslint-config": "^9.1.0",
+    "@types/adm-zip": "^0.5.8",
+    "@types/webextension-polyfill": "^0.12.5",
+    "eslint": "^10.6.0",
+    "eslint-plugin-format": "^2.0.1",
+    "rolldown": "1.1.5",
     "rollup-plugin-copy": "^3.5.0",
-    "rollup-plugin-delete": "^3.0.1",
-    "tsx": "^4.20.5",
-    "typescript": "^5.9.2",
-    "web-ext": "^8.9.0",
+    "rollup-plugin-delete": "^3.0.2",
+    "tsx": "^4.23.0",
+    "typescript": "^6.0.3",
+    "web-ext": "^10.4.0",
     "webextension-polyfill": "^0.12.0"
-  },
-  "pnpm": {
-    "peerDependencyRules": {
-      "allowedVersions": {
-        "eslint": "9"
-      }
-    }
   }
 }

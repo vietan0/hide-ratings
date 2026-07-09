@@ -57,7 +57,7 @@ document.addEventListener('removeArrow', (e) => {
       -> 'removeArrow' would mistakenly turn on an arrow that has been removed by 'removeAllArrow'
     That's why a condition is needed:
    */
-  if (allCCTweaksArrows.find(arrow => arrow.key.includes(uci))) {
+  if (allCCTweaksArrows.some(arrow => arrow.key.includes(uci))) {
     wcChessBoard.game.markings.toggleOne({
       data: { from, to, color },
       type: 'arrow',
