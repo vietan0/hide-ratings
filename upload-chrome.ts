@@ -1,6 +1,5 @@
 import child_process from 'node:child_process';
 import { readFile } from 'node:fs/promises';
-import process from 'node:process';
 import { promisify } from 'node:util';
 import dotenv from 'dotenv';
 import { glob } from 'glob';
@@ -41,10 +40,6 @@ async function uploadChrome() {
 
   const args = {
     '--source': zipFiles[0],
-    '--extension-id': process.env.EXTENSION_ID,
-    '--client-id': process.env.CLIENT_ID,
-    '--client-secret': process.env.CLIENT_SECRET,
-    '--refresh-token': process.env.REFRESH_TOKEN,
   };
 
   const command = `chrome-webstore-upload upload ${parseArgs(args)}`;
